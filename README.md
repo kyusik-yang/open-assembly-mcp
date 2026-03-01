@@ -255,3 +255,7 @@ This project was built following the architecture of [Koomook/data-go-mcp-server
 ---
 
 *This project is not affiliated with or endorsed by the Korean National Assembly or open.assembly.go.kr. Please review the [열린국회정보 이용약관](https://open.assembly.go.kr) before use.*
+
+---
+
+*Built with [Claude Code](https://claude.ai/code) — because the best way to make an AI tool for querying parliament is to have an AI write it.*
