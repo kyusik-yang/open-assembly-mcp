@@ -1,15 +1,140 @@
-# data-go-mcp.open-assembly
+# open-assembly-mcp
 
-열린국회정보(open.assembly.go.kr) Open API MCP 서버 — 의안, 의원, 표결, 회의록, 청원 조회
+[![GitHub](https://img.shields.io/badge/github-open--assembly--mcp-blue.svg?style=flat&logo=github)](https://github.com/kyusik-yang/open-assembly-mcp)
+[![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![Tests](https://img.shields.io/badge/tests-22%20passed-brightgreen)](tests/)
 
-## 설치 및 사용
+**MCP server for the Korean National Assembly Open API** ([열린국회정보](https://open.assembly.go.kr)) — query bills, members, vote results, committee composition, and bill proposers directly from Claude or any MCP-compatible AI client.
 
-### Claude Desktop 설정
+> **Acknowledgement**: This project was built following the architecture and conventions of [Koomook/data-go-mcp-servers](https://github.com/Koomook/data-go-mcp-servers), an open-source collection of Korean public data MCP servers. The server structure, API client pattern, and packaging conventions are adapted from that project under the Apache 2.0 license.
+
+---
+
+## Table of Contents
+
+- [What is MCP?](#what-is-mcp)
+- [Why an Open Assembly MCP?](#why-an-open-assembly-mcp)
+- [Available Tools](#available-tools)
+- [Installation](#installation)
+- [Claude Desktop Setup](#claude-desktop-setup)
+- [Usage Examples](#usage-examples)
+- [API Key](#api-key)
+- [Local Development](#local-development)
+- [License](#license)
+
+---
+
+## What is MCP?
+
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io) is an open standard that lets AI assistants like Claude call external tools and APIs directly within a conversation. An MCP server exposes a set of typed functions ("tools") that the AI can invoke, receive structured results from, and reason over — without any copy-pasting or manual data retrieval.
+
+---
+
+## Why an Open Assembly MCP?
+
+The Korean National Assembly's [열린국회정보 API](https://open.assembly.go.kr) contains rich legislative data: every bill filed since the 16th Assembly, full member rosters, plenary vote tallies, committee review timelines, and co-sponsor networks. This data is invaluable for political science research, but the traditional workflow is slow:
+
+```
+Traditional workflow
+──────────────────────────────────────────────────────────────
+1. Visit open.assembly.go.kr or the bill information system
+2. Search manually, page through results
+3. Download or copy data, clean it
+4. Load into Python/R for analysis
+5. Repeat for each sub-query (proposers, votes, committee...)
+   → Hours of overhead per research question
+```
+
+```
+With open-assembly-mcp
+──────────────────────────────────────────────────────────────
+"22대 국회에서 발의된 AI 관련 법률안 목록, 대표발의자 소속 정당,
+ 본회의 표결 결과까지 정리해줘"
+   → Claude calls search_bills → get_bill_proposers → get_vote_results
+   → Returns a structured summary in seconds
+```
+
+### Concrete research use cases
+
+| Research task | Tools used |
+|---|---|
+| Map the co-sponsorship network for housing policy bills | `search_bills` + `get_bill_proposers` |
+| Track which committee reviewed a bill and when | `get_bill_review` + `get_bill_detail` |
+| Compare yes/no/abstain rates across parties on a specific bill | `get_vote_results` + `get_member_info` |
+| List all bills proposed by a specific member | `search_bills` (proposer filter) |
+| Audit committee composition by party for a given assembly | `get_committee_members` |
+| Identify bills that passed vs. were scrapped in a policy domain | `search_bills` (proc_result filter) |
+
+### Why this matters for legislative research
+
+- **Speed**: Multi-step queries that previously took hours of manual data collection take seconds.
+- **Reproducibility**: Every query is a structured API call with explicit parameters — easy to document and re-run.
+- **Chaining**: Claude can chain multiple tools in a single request, e.g., find a bill, get its proposers, look up each proposer's party and committee.
+- **Iteration**: Natural language lets you refine queries without rewriting code — crucial during exploratory analysis.
+- **Accessibility**: Researchers without strong programming backgrounds can access the same data as those who script API calls directly.
+
+---
+
+## Available Tools
+
+### Core tools (endpoints verified February–March 2026)
+
+| Tool | Description | Endpoint |
+|---|---|---|
+| `search_bills` | Search member-sponsored bills by assembly, keyword, proposer, result, or committee | `nzmimeepazxkubdpn` |
+| `get_bill_detail` | Full bill record including processing history, committee schedule, and plenary result | `ALLBILL` |
+| `get_member_info` | National Assembly member profiles: party, district, committee, election type | `nwvrqwxyaytdsfvhu` |
+| `get_vote_results` | Plenary vote tallies by bill: yes / no / abstain / absent counts | `ncocpgfiaoituanbr` |
+| `get_bill_review` | Bill review timeline through committee and plenary stages | `nwbpacrgavhjryiph` |
+| `get_bill_proposers` | Lead and co-sponsor list for a bill (requires `BILL_ID`) | `BILLINFOPPSR` |
+| `get_committee_members` | Committee member roster filtered by committee name | `nwvrqwxyaytdsfvhu` + filter |
+
+### Stub tools (Open API not available)
+
+The following tools are registered but return a clear not-supported message. The underlying data exists on the Assembly website but is only distributed as file downloads, not callable Open API endpoints.
+
+| Tool | Data source | Workaround |
+|---|---|---|
+| `search_minutes` | Committee and plenary transcripts | [likms.assembly.go.kr/record](https://likms.assembly.go.kr/record/) |
+| `get_petitions` | Citizen petition registry | [petitions.assembly.go.kr](https://petitions.assembly.go.kr/) |
+| `get_bill_content` | Bill rationale and key provisions | Use `get_bill_detail` → `LINK_URL` |
+
+---
+
+## Installation
+
+### Using uvx (recommended — no install needed)
+
+```bash
+uvx data-go-mcp.open-assembly
+```
+
+### Using uv
+
+```bash
+uv pip install data-go-mcp.open-assembly
+```
+
+### Using pip
+
+```bash
+pip install data-go-mcp.open-assembly
+```
+
+---
+
+## Claude Desktop Setup
+
+Edit your Claude Desktop config file:
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
-    "data-go-mcp.open-assembly": {
+    "open-assembly": {
       "command": "uvx",
       "args": ["data-go-mcp.open-assembly@latest"],
       "env": {
@@ -20,45 +145,113 @@
 }
 ```
 
-API 키는 [열린국회정보](https://open.assembly.go.kr) 회원가입 후 발급받을 수 있습니다.
+Restart Claude Desktop after saving. The Assembly tools will appear in the tool list.
 
-## 제공 Tools (P1 — 엔드포인트 확인 완료)
+---
 
-| Tool | 설명 | 엔드포인트 |
-|------|------|----------|
-| `search_bills` | 국회의원 발의법률안 검색 | `nzmimeepazxkubdpn` |
-| `get_bill_detail` | 의안 상세정보 조회 | `ALLBILL` |
-| `get_member_info` | 국회의원 정보 조회 | `nwvrqwxyaytdsfvhu` |
-| `get_vote_results` | 의안별 본회의 표결현황 | `ncocpgfiaoituanbr` |
-| `get_bill_review` | 의안 처리·심사정보 | `nwbpacrgavhjryiph` |
+## Usage Examples
 
-## 제공 Tools (P2)
-
-| Tool | 설명 | 상태 |
-|------|------|------|
-| `get_bill_proposers` | 의안 공동발의자 정보 | 확인 완료 (`BILLINFOPPSR`) |
-| `get_committee_members` | 위원회 위원 명단 | 확인 완료 (의원 API 필터) |
-| `search_minutes` | 회의록 검색 (위원회/본회의) | Open API 미제공 (파일데이터만) |
-| `get_petitions` | 청원 접수목록 조회 | Open API 미제공 (파일데이터만) |
-| `get_bill_content` | 법률안 제안이유 및 주요내용 | Open API 미제공 (파일데이터만) |
-
-## 사용 예시
+Once connected, you can ask Claude questions like:
 
 ```
 22대 국회에서 발의된 AI 관련 법률안을 찾아줘
-더불어민주당 소속 의원 목록을 알려줘
-반도체특별법 표결 결과를 보여줘
+```
+```
+더불어민주당 소속 의원 명단과 각각의 소속 위원회를 정리해줘
+```
+```
+반도체특별법의 표결 결과와 공동발의자 명단을 알려줘
+```
+```
+Find all housing-related bills in the 22nd assembly that passed, and list
+their lead proposers with party affiliation.
+```
+```
+법제사법위원회 소속 의원 명단을 가져오고, 22대에서 해당 의원들이
+대표발의한 법률안 수를 각각 세어줘
 ```
 
-## 로컬 개발
+Claude will call the appropriate tools, chain results, and return a structured summary.
+
+---
+
+## API Key
+
+An API key for 열린국회정보 is **free**. Sign up at [open.assembly.go.kr](https://open.assembly.go.kr), navigate to **마이페이지 → API 키 발급**, and copy the key.
+
+Set it as an environment variable:
 
 ```bash
-cp .env.example .env
-# .env에 ASSEMBLY_API_KEY 입력
-uv sync --dev
-uv run pytest tests/
+export ASSEMBLY_API_KEY="your-key-here"
 ```
 
-## 라이센스
+Or put it in a `.env` file (see `.env.example`):
 
-Apache 2.0. 이 프로젝트는 [Koomook/data-go-mcp-servers](https://github.com/Koomook/data-go-mcp-servers)의 구조를 참고하여 작성되었습니다.
+```
+ASSEMBLY_API_KEY=your-key-here
+```
+
+---
+
+## Local Development
+
+```bash
+git clone https://github.com/kyusik-yang/open-assembly-mcp.git
+cd open-assembly-mcp
+
+cp .env.example .env
+# Add your ASSEMBLY_API_KEY to .env
+
+uv sync --dev
+uv run pytest tests/ -v
+```
+
+### Running the server locally
+
+```bash
+ASSEMBLY_API_KEY=your-key uv run python -m data_go_mcp.open_assembly.server
+```
+
+Or point Claude Desktop at the local source:
+
+```json
+{
+  "mcpServers": {
+    "open-assembly-local": {
+      "command": "/path/to/open-assembly-mcp/.venv/bin/python",
+      "args": ["-m", "data_go_mcp.open_assembly.server"],
+      "cwd": "/path/to/open-assembly-mcp",
+      "env": {
+        "ASSEMBLY_API_KEY": "your-key-here"
+      }
+    }
+  }
+}
+```
+
+### Project structure
+
+```
+open-assembly-mcp/
+├── data_go_mcp/
+│   └── open_assembly/
+│       ├── client.py      # Async httpx client for 열린국회정보 API
+│       └── server.py      # FastMCP server + tool definitions
+├── tests/
+│   ├── test_client.py     # Unit tests for API response parsing
+│   └── test_server.py     # Integration-style tests for each tool
+├── pyproject.toml
+└── .env.example
+```
+
+---
+
+## License
+
+Apache 2.0. See [LICENSE](LICENSE).
+
+This project was built following the architecture of [Koomook/data-go-mcp-servers](https://github.com/Koomook/data-go-mcp-servers). The server structure, packaging conventions, and API client pattern are adapted from that project. Changes include: new API client targeting 열린국회정보 (open.assembly.go.kr), seven new tool definitions, endpoint discovery and verification for all confirmed endpoints, and tests.
+
+---
+
+*This project is not affiliated with or endorsed by the Korean National Assembly or open.assembly.go.kr. Please review the [열린국회정보 이용약관](https://open.assembly.go.kr) before use.*
