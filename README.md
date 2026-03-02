@@ -4,10 +4,10 @@
 [![GitHub](https://img.shields.io/badge/github-open--assembly--mcp-blue.svg?style=flat&logo=github)](https://github.com/kyusik-yang/open-assembly-mcp)
 [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-30%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-36%20passed-brightgreen)](tests/)
 [![한국어](https://img.shields.io/badge/docs-한국어-blue)](README.ko.md)
 
-**MCP server for the Korean National Assembly Open API** ([열린국회정보](https://open.assembly.go.kr)) — query bills, members, vote results, committee composition, and per-member vote records directly from Claude or any MCP-compatible AI client.
+**MCP server for the Korean National Assembly Open API** ([열린국회정보](https://open.assembly.go.kr)) — query bills, members, vote results, committee composition, pending bills, plenary agenda, and per-member vote records directly from Claude or any MCP-compatible AI client.
 
 ---
 
@@ -69,8 +69,11 @@ All tools return `total_count` and `has_more` for transparent pagination.
 | `get_member_info` | 16th–22nd | |
 | `get_committee_members` | 16th–22nd | |
 | `get_vote_results` | 19th–22nd recommended | Electronic vote records sparse before 19th Assembly |
-| `get_member_votes` | 18th–22nd recommended | Roll-call data available from ~18th Assembly onward |
+| `get_member_votes` | 18th–22nd recommended | Roll-call data available from ~18th Assembly onward; default page_size=300 fetches all members in one call |
 | `get_bill_proposers` | 16th–22nd | No assembly filter; uses bill ID directly |
+| `get_pending_bills` | 22nd recommended | Bills not yet processed; ~8,900 in the 22nd Assembly |
+| `get_plenary_agenda` | 22nd recommended | Bills scheduled for upcoming plenary session |
+| `get_bill_committee_review` | 16th–22nd | Committee meetings for a specific bill (requires BILL_ID) |
 
 **Not available via Open API**: transcripts, citizen petitions, bill full text
 (use `get_bill_detail` → `LINK_URL` for the official bill page).
@@ -167,6 +170,11 @@ ASSEMBLY_API_KEY=your-key uv run python -m data_go_mcp.open_assembly.server
 ---
 
 ## Changelog
+
+### v0.2.5 (2026-03)
+- Added 3 new tools: `get_pending_bills` (계류의안), `get_plenary_agenda` (본회의부의안건), `get_bill_committee_review` (위원회 심사 회의정보)
+- Fixed `get_member_votes` default `page_size` 50 → 300 (covers full ~300-member plenary in one call)
+- Improved docstrings: corrected `get_vote_results` description, added pagination tips to all tools
 
 ### v0.2.4 (2026-03)
 - `--setup` wizard: ASCII art banner with teal-to-blue gradient, animated validation, polished bilingual prompts

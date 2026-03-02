@@ -11,13 +11,16 @@ load_dotenv()
 BASE_URL = "https://open.assembly.go.kr/portal/openapi"
 
 # Confirmed endpoint codes (verified 2026-02/03)
-EP_BILLS = "nzmimeepazxkubdpn"          # 국회의원 발의법률안
-EP_BILL_DETAIL = "ALLBILL"              # 의안정보 통합 API
-EP_BILL_REVIEW = "nwbpacrgavhjryiph"    # 의안 처리·심사정보
-EP_MEMBER = "nwvrqwxyaytdsfvhu"         # 국회의원 정보 통합 API
-EP_VOTE = "ncocpgfiaoituanbr"           # 의안별 표결현황
-EP_BILL_PROPOSERS = "BILLINFOPPSR"      # 의안 제안자정보 (requires BILL_ID)
-EP_MEMBER_VOTES = "nojepdqqaweusdfbi"  # 국회의원 본회의 표결정보 (requires BILL_ID + AGE)
+EP_BILLS = "nzmimeepazxkubdpn"              # 국회의원 발의법률안
+EP_BILL_DETAIL = "ALLBILL"                  # 의안정보 통합 API
+EP_BILL_REVIEW = "nwbpacrgavhjryiph"        # 의안 처리·심사정보
+EP_MEMBER = "nwvrqwxyaytdsfvhu"             # 국회의원 정보 통합 API
+EP_VOTE = "ncocpgfiaoituanbr"               # 의안별 표결현황
+EP_BILL_PROPOSERS = "BILLINFOPPSR"          # 의안 제안자정보 (requires BILL_ID)
+EP_MEMBER_VOTES = "nojepdqqaweusdfbi"       # 국회의원 본회의 표결정보 (requires BILL_ID + AGE)
+EP_PENDING_BILLS = "nwbqublzajtcqpdae"      # 계류의안 (미처리 현안 목록)
+EP_PLENARY_AGENDA = "nayjnliqaexiioauy"     # 본회의부의안건 (다음 본회의 상정 예정 안건)
+EP_COMMITTEE_REVIEW_MTG = "BILLJUDGECONF"  # 위원회 심사 회의정보 (requires BILL_ID)
 # EP_COMMITTEE_MEMBERS reuses EP_MEMBER with CMIT_NM filter
 
 # Not available as Open API (only file data): 회의록, 청원, 법률안 제안이유
@@ -193,7 +196,7 @@ class AssemblyAPIClient:
         party: Optional[str] = None,
         vote_result: Optional[str] = None,
         page: int = 1,
-        page_size: int = 50,
+        page_size: int = 300,
     ) -> tuple[list[dict], int]:
         """국회의원 본회의 표결정보 조회. 특정 법안에 대한 의원별 찬반 기록.
 
@@ -228,3 +231,44 @@ class AssemblyAPIClient:
             "pIndex": page,
             "pSize": page_size,
         })
+
+    async def get_pending_bills(
+        self,
+        age: str,
+        bill_name: Optional[str] = None,
+        committee: Optional[str] = None,
+        proposer: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[dict], int]:
+        """계류의안 목록 조회 — 아직 처리되지 않은 현안 법률안."""
+        return await self._get(EP_PENDING_BILLS, {
+            "AGE": age,
+            "BILL_NAME": bill_name,
+            "COMMITTEE": committee,
+            "PROPOSER": proposer,
+            "pIndex": page,
+            "pSize": page_size,
+        })
+
+    async def get_plenary_agenda(
+        self,
+        age: str,
+        session: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[dict], int]:
+        """본회의 부의안건 조회 — 본회의 상정 예정 안건 목록."""
+        return await self._get(EP_PLENARY_AGENDA, {
+            "AGE": age,
+            "SESS_NO": session,
+            "pIndex": page,
+            "pSize": page_size,
+        })
+
+    async def get_bill_committee_review(
+        self,
+        bill_id: str,
+    ) -> tuple[list[dict], int]:
+        """의안 위원회 심사 회의정보 조회 — 특정 의안이 심사된 위원회 회의 목록."""
+        return await self._get(EP_COMMITTEE_REVIEW_MTG, {"BILL_ID": bill_id})

@@ -6,7 +6,7 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![English](https://img.shields.io/badge/docs-English-blue)](README.md)
 
-**열린국회정보 API용 MCP 서버** — Claude에서 법률안, 의원 정보, 표결 결과, 위원회 구성, 개인별 표결 기록을 직접 조회할 수 있습니다.
+**열린국회정보 API용 MCP 서버** — Claude에서 법률안, 의원 정보, 표결 결과, 위원회 구성, 계류의안, 본회의 부의안건, 개인별 표결 기록을 직접 조회할 수 있습니다.
 
 ---
 
@@ -68,8 +68,11 @@ Claude가 내부적으로 도구들을 연결해서 결과를 돌려줍니다.
 | `get_member_info` | 16~22대 | |
 | `get_committee_members` | 16~22대 | |
 | `get_vote_results` | 19~22대 권장 | 전자 표결 기록은 19대 이전 희소 |
-| `get_member_votes` | 18~22대 권장 | 개인별 표결 데이터는 18대 이후부터 안정적 |
+| `get_member_votes` | 18~22대 권장 | 개인별 표결 데이터는 18대 이후부터 안정적; 기본 page_size=300으로 전체 의원 1회 조회 |
 | `get_bill_proposers` | 16~22대 | 대수 필터 없음, 의안ID로 직접 조회 |
+| `get_pending_bills` | 22대 권장 | 미처리 계류의안; 22대 기준 약 8,900건 |
+| `get_plenary_agenda` | 22대 권장 | 본회의 상정 예정 안건 목록 |
+| `get_bill_committee_review` | 16~22대 | 특정 의안의 위원회 심사 회의정보 (BILL_ID 필요) |
 
 **Open API 미제공 항목**: 회의록, 청원, 법안 전문
 (`get_bill_detail` → `LINK_URL`에서 공식 의안 페이지 확인 가능).
@@ -163,6 +166,11 @@ uv run pytest tests/ -v
 ---
 
 ## 변경 이력
+
+### v0.2.5 (2026-03)
+- 신규 도구 3개: `get_pending_bills` (계류의안), `get_plenary_agenda` (본회의부의안건), `get_bill_committee_review` (위원회 심사 회의정보)
+- `get_member_votes` 기본 page_size 50 → 300으로 수정 (본회의 전체 의원 1회 조회)
+- docstring 개선: `get_vote_results` 오류 설명 수정, 모든 도구에 페이지네이션 안내 추가
 
 ### v0.2.4 (2026-03)
 - `--setup` 마법사: ASCII 아트 배너 + 그라디언트 색상, 애니메이션 검증, 전문적 이중언어 프롬프트

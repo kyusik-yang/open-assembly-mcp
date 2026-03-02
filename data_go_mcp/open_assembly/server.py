@@ -69,7 +69,7 @@ async def search_bills(
                PROPOSE_DT, PROC_RESULT, COMMITTEE, DETAIL_LINK 등)
         count: 반환된 건수
         total_count: 검색 조건에 해당하는 전체 건수
-        has_more: 다음 페이지 존재 여부
+        has_more: 다음 페이지 존재 여부 — True이면 page+1로 재호출하여 추가 결과 조회
     """
     async with AssemblyAPIClient() as client:
         try:
@@ -155,7 +155,7 @@ async def get_member_info(
                  SEX_GBN_NM, TEL_NO, E_MAIL, HOMEPAGE, MONA_CD, ASSEM_ADDR 등)
         count: 반환된 건수
         total_count: 전체 건수
-        has_more: 다음 페이지 존재 여부
+        has_more: 다음 페이지 존재 여부 — True이면 page+1로 재호출
     """
     async with AssemblyAPIClient() as client:
         try:
@@ -197,7 +197,7 @@ async def get_vote_results(
     의안별 본회의 표결현황을 조회합니다 (집계: 찬성/반대/기권 건수).
 
     Get plenary vote results by bill (aggregate counts: yes/no/abstain).
-    For individual member voting records, the Open API does not provide a per-member endpoint.
+    Each result includes a BILL_ID field — pass it to get_member_votes to get per-member records.
 
     Args:
         age: 대수 (예: "22") — 필수
@@ -264,7 +264,7 @@ async def get_bill_review(
                  위원회 및 본회의 처리 일정, 표결 결과 등)
         count: 반환된 건수
         total_count: 전체 건수
-        has_more: 다음 페이지 존재 여부
+        has_more: 다음 페이지 존재 여부 — True이면 page+1로 재호출
     """
     async with AssemblyAPIClient() as client:
         try:
@@ -330,13 +330,15 @@ async def get_member_votes(
     party: Optional[str] = None,
     vote_result: Optional[str] = None,
     page: int = 1,
-    page_size: int = 50,
+    page_size: int = 300,
 ) -> dict[str, Any]:
     """
     특정 법안에 대한 국회의원 개인별 본회의 표결 기록을 조회합니다.
 
     Get individual member voting records for a specific bill (per-member yes/no/abstain).
     Unlike get_vote_results (aggregate counts), this returns one row per member.
+    Tip: the default page_size=300 is intentionally large to fetch all ~300 plenary members
+    in a single call. Use has_more + page+1 if you still need more records.
 
     Args:
         bill_id: 의안ID — 필수. search_bills 결과의 BILL_ID (예: "PRC_T2M6W0F2...").
@@ -346,7 +348,7 @@ async def get_member_votes(
         party: 정당명 필터 (선택, 예: "더불어민주당")
         vote_result: 표결결과 필터 (선택) — "찬성" | "반대" | "기권"
         page: 페이지 번호 (기본값: 1)
-        page_size: 페이지당 결과수 (기본값: 50 — 본회의 의원 수가 ~300명이므로 50~100 권장)
+        page_size: 페이지당 결과수 (기본값: 300 — 본회의 전체 의원 ~300명을 한 번에 조회)
 
     Returns:
         votes: 의원별 표결 목록 (HG_NM, POLY_NM, ORIG_NM, RESULT_VOTE_MOD,
@@ -406,7 +408,7 @@ async def get_committee_members(
         members: 위원 목록 (HG_NM, POLY_NM, ORIG_NM, CMIT_NM, REELE_GBN_NM 등)
         count: 반환된 건수
         total_count: 전체 건수
-        has_more: 다음 페이지 존재 여부
+        has_more: 다음 페이지 존재 여부 — True이면 page+1로 재호출
     """
     async with AssemblyAPIClient() as client:
         try:
@@ -431,6 +433,150 @@ async def get_committee_members(
             }
         except Exception as e:
             return {"error": str(e), "members": [], "count": 0, "total_count": 0, "has_more": False}
+
+
+@mcp.tool()
+async def get_pending_bills(
+    age: str,
+    bill_name: Optional[str] = None,
+    committee: Optional[str] = None,
+    proposer: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
+) -> dict[str, Any]:
+    """
+    현재 국회에 계류 중인 미처리 의안 목록을 조회합니다.
+
+    Get a list of bills currently pending (not yet processed) in the National Assembly.
+    Unlike search_bills which searches all bills by outcome, this is pre-filtered to
+    only bills still awaiting committee review or plenary vote.
+
+    Args:
+        age: 대수 (예: "22") — 필수
+        bill_name: 법률안명 키워드로 필터 (선택)
+        committee: 소관위원회명으로 필터 (선택)
+        proposer: 대표발의자명으로 필터 (선택)
+        page: 페이지 번호 (기본값: 1)
+        page_size: 페이지당 결과수 (기본값: 10)
+
+    Returns:
+        bills: 계류의안 목록 (BILL_ID, BILL_NO, BILL_NAME, PROPOSER, PROPOSE_DT,
+               COMMITTEE, CURR_STATUS 등)
+        count: 반환된 건수
+        total_count: 전체 계류의안 수
+        has_more: 다음 페이지 존재 여부 — True이면 page+1로 재호출
+    """
+    async with AssemblyAPIClient() as client:
+        try:
+            rows, total = await client.get_pending_bills(
+                age=age,
+                bill_name=bill_name,
+                committee=committee,
+                proposer=proposer,
+                page=page,
+                page_size=page_size,
+            )
+            has_more = total > page * page_size
+            msg = (
+                f"전체 {total}건의 계류의안 중 {len(rows)}건 반환 (페이지 {page})."
+                if rows
+                else "계류의안이 없습니다."
+            )
+            return {
+                "bills": rows,
+                "count": len(rows),
+                "total_count": total,
+                "has_more": has_more,
+                "message": msg,
+            }
+        except Exception as e:
+            return {"error": str(e), "bills": [], "count": 0, "total_count": 0, "has_more": False}
+
+
+@mcp.tool()
+async def get_plenary_agenda(
+    age: str,
+    session: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
+) -> dict[str, Any]:
+    """
+    본회의 부의안건 — 본회의 상정 예정(또는 상정된) 안건 목록을 조회합니다.
+
+    Get bills scheduled for (or placed on) the plenary session agenda.
+    Use this to see what bills are coming up for a plenary vote.
+
+    Args:
+        age: 대수 (예: "22") — 필수
+        session: 회기 번호로 필터 (선택, 예: "1" = 1회기)
+        page: 페이지 번호 (기본값: 1)
+        page_size: 페이지당 결과수 (기본값: 10)
+
+    Returns:
+        agenda_items: 부의안건 목록 (BILL_ID, BILL_NO, BILL_NAME, SESS_NO,
+                      AGENDA_NO, PROPOSE_DT, COMMITTEE 등)
+        count: 반환된 건수
+        total_count: 전체 건수
+        has_more: 다음 페이지 존재 여부 — True이면 page+1로 재호출
+    """
+    async with AssemblyAPIClient() as client:
+        try:
+            rows, total = await client.get_plenary_agenda(
+                age=age,
+                session=session,
+                page=page,
+                page_size=page_size,
+            )
+            has_more = total > page * page_size
+            msg = (
+                f"전체 {total}건의 본회의 부의안건 중 {len(rows)}건 반환 (페이지 {page})."
+                if rows
+                else "부의안건이 없습니다."
+            )
+            return {
+                "agenda_items": rows,
+                "count": len(rows),
+                "total_count": total,
+                "has_more": has_more,
+                "message": msg,
+            }
+        except Exception as e:
+            return {"error": str(e), "agenda_items": [], "count": 0, "total_count": 0, "has_more": False}
+
+
+@mcp.tool()
+async def get_bill_committee_review(bill_id: str) -> dict[str, Any]:
+    """
+    특정 의안의 위원회 심사 회의정보를 조회합니다.
+
+    Get the list of committee meetings at which a specific bill was reviewed.
+    Useful for reconstructing a bill's full legislative timeline through committee stages.
+
+    Args:
+        bill_id: 의안ID — 필수. search_bills 또는 get_pending_bills 결과의 BILL_ID (예: "PRC_...").
+                 BILL_NO(숫자)가 아닌 BILL_ID(PRC_...)를 사용해야 합니다.
+
+    Returns:
+        meetings: 위원회 심사 회의 목록 (BILL_ID, BILL_NM, CMIT_NM, MTG_DT,
+                  SESS_NO, PROC_RESULT, CONF_STATUS 등)
+        count: 반환된 건수
+        total_count: 전체 건수
+    """
+    async with AssemblyAPIClient() as client:
+        try:
+            rows, total = await client.get_bill_committee_review(bill_id=bill_id)
+            return {
+                "meetings": rows,
+                "count": len(rows),
+                "total_count": total,
+                "message": (
+                    f"{len(rows)}건의 위원회 심사 회의정보를 찾았습니다."
+                    if rows
+                    else "위원회 심사 회의정보가 없습니다. BILL_ID를 확인하세요."
+                ),
+            }
+        except Exception as e:
+            return {"error": str(e), "meetings": [], "count": 0, "total_count": 0}
 
 
 # ------------------------------------------------------------------

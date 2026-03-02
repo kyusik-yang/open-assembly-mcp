@@ -299,3 +299,98 @@ class TestGetBillReviewTool:
         assert result["count"] == 1
         assert result["total_count"] == 3
         assert result["reviews"][0]["COMMITTEE_NM"] == "법제사법위원회"
+
+
+class TestGetPendingBillsTool:
+    @pytest.mark.asyncio
+    async def test_returns_pending_bills(self):
+        from data_go_mcp.open_assembly.server import get_pending_bills
+
+        sample_rows = [
+            {"BILL_NO": "2217500", "BILL_NAME": "계류테스트법안", "PROPOSER": "홍길동", "COMMITTEE": "법제사법위원회"}
+        ]
+        mock_client = _make_mock_client(sample_rows, "get_pending_bills", total=8900)
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            result = await get_pending_bills(age="22")
+
+        assert result["count"] == 1
+        assert result["total_count"] == 8900
+        assert result["has_more"] is True
+        assert result["bills"][0]["BILL_NO"] == "2217500"
+        assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_filters_passed_to_client(self):
+        from data_go_mcp.open_assembly.server import get_pending_bills
+
+        mock_client = _make_mock_client([], "get_pending_bills", total=0)
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            await get_pending_bills(age="22", committee="법제사법위원회", proposer="홍길동")
+
+        call_kwargs = mock_client.get_pending_bills.call_args.kwargs
+        assert call_kwargs["committee"] == "법제사법위원회"
+        assert call_kwargs["proposer"] == "홍길동"
+
+
+class TestGetPlenaryAgendaTool:
+    @pytest.mark.asyncio
+    async def test_returns_agenda_items(self):
+        from data_go_mcp.open_assembly.server import get_plenary_agenda
+
+        sample_rows = [
+            {"BILL_NO": "2217501", "BILL_NAME": "부의안건테스트법안", "SESS_NO": "1"}
+        ]
+        mock_client = _make_mock_client(sample_rows, "get_plenary_agenda", total=3)
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            result = await get_plenary_agenda(age="22")
+
+        assert result["count"] == 1
+        assert result["total_count"] == 3
+        assert result["agenda_items"][0]["BILL_NO"] == "2217501"
+        assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_session_filter_passed(self):
+        from data_go_mcp.open_assembly.server import get_plenary_agenda
+
+        mock_client = _make_mock_client([], "get_plenary_agenda", total=0)
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            await get_plenary_agenda(age="22", session="2")
+
+        assert mock_client.get_plenary_agenda.call_args.kwargs["session"] == "2"
+
+
+class TestGetBillCommitteeReviewTool:
+    @pytest.mark.asyncio
+    async def test_returns_committee_meetings(self):
+        from data_go_mcp.open_assembly.server import get_bill_committee_review
+
+        sample_rows = [
+            {"BILL_ID": "PRC_TEST123", "CMIT_NM": "법제사법위원회", "MTG_DT": "20240315"}
+        ]
+        mock_client = _make_mock_client(sample_rows, "get_bill_committee_review", total=2)
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            result = await get_bill_committee_review(bill_id="PRC_TEST123")
+
+        assert result["count"] == 1
+        assert result["total_count"] == 2
+        assert result["meetings"][0]["CMIT_NM"] == "법제사법위원회"
+        assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_handles_no_meetings(self):
+        from data_go_mcp.open_assembly.server import get_bill_committee_review
+
+        mock_client = _make_mock_client([], "get_bill_committee_review", total=0)
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            result = await get_bill_committee_review(bill_id="PRC_NOTFOUND")
+
+        assert result["count"] == 0
+        assert result["meetings"] == []
+        assert "BILL_ID" in result["message"]
