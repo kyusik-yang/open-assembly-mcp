@@ -13,6 +13,8 @@
 
 ## Quick Start
 
+**Prerequisites:** [Claude Desktop](https://claude.ai/download) must be installed.
+
 **Step 1.** Get a free API key at [open.assembly.go.kr](https://open.assembly.go.kr)
 → Sign up → 마이페이지 → API 키 발급
 

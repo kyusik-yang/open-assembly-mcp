@@ -12,6 +12,8 @@
 
 ## 빠른 시작
 
+**사전 준비:** [Claude Desktop](https://claude.ai/download)이 설치되어 있어야 합니다.
+
 **Step 1.** [open.assembly.go.kr](https://open.assembly.go.kr)에서 무료 API 키 발급
 → 회원가입 → 마이페이지 → API 키 발급
 
