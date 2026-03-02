@@ -125,6 +125,18 @@ pip install open-assembly-mcp
 
 ## Claude Desktop Setup
 
+### Option A: Interactive setup (recommended)
+
+Run the setup wizard — it asks for your API key, validates it, and writes the config automatically:
+
+```bash
+uvx open-assembly-mcp --setup
+```
+
+Then restart Claude Desktop. Done.
+
+### Option B: Manual config
+
 Edit your Claude Desktop config file:
 
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`

@@ -439,6 +439,11 @@ async def get_committee_members(
 
 
 def main() -> None:
+    if "--setup" in sys.argv:
+        from .setup_cli import run_setup
+        run_setup()
+        return
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -446,7 +451,8 @@ def main() -> None:
     api_key = os.getenv("ASSEMBLY_API_KEY")
     if not api_key:
         logging.error("ASSEMBLY_API_KEY environment variable is not set.")
-        logging.error("Sign up at https://open.assembly.go.kr to get your API key.")
+        logging.error("Run 'uvx open-assembly-mcp --setup' for interactive setup.")
+        logging.error("Or sign up at https://open.assembly.go.kr to get your API key.")
         sys.exit(1)
     mcp.run()
 
