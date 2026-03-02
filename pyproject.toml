@@ -1,14 +1,14 @@
 [project]
 name = "data-go-mcp.open-assembly"
-version = "0.1.0"
-description = "MCP server for Korean National Assembly Open API (open.assembly.go.kr) — bills, members, votes, minutes, petitions"
+version = "0.2.0"
+description = "MCP server for Korean National Assembly Open API (open.assembly.go.kr) — bills, members, votes, committee composition, and per-member vote records"
 readme = "README.md"
 authors = [
     { name = "Kyusik Yang", email = "kyusik.yang@nyu.edu" }
 ]
 requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
-keywords = ["mcp", "korea", "assembly", "national-assembly", "open-assembly", "bills", "legislation", "api"]
+keywords = ["mcp", "korea", "assembly", "national-assembly", "open-assembly", "bills", "legislation", "voting", "api"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -22,7 +22,6 @@ classifiers = [
 dependencies = [
     "httpx>=0.28.1",
     "mcp[cli]>=1.13.0",
-    "pydantic>=2.11.7",
     "python-dotenv>=1.1.1",
 ]
 

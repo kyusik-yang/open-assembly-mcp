@@ -1,0 +1,34 @@
+name: Publish to PyPI
+
+# Triggers when you push a version tag: git tag v0.2.0 && git push --tags
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi  # optional: add branch protection in GitHub settings
+    permissions:
+      id-token: write  # required for PyPI Trusted Publisher (OIDC, no token needed)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Run tests
+        run: uv run pytest tests/ -v
+
+      - name: Build
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish
+        # Uses OIDC automatically — no PYPI_API_TOKEN needed
+        # Requires Trusted Publisher configured at pypi.org:
+        #   Owner: kyusik-yang  Repo: open-assembly-mcp
+        #   Workflow: publish.yml  Environment: pypi (or leave blank)

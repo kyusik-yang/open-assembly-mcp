@@ -3,7 +3,7 @@
 [![GitHub](https://img.shields.io/badge/github-open--assembly--mcp-blue.svg?style=flat&logo=github)](https://github.com/kyusik-yang/open-assembly-mcp)
 [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-22%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-30%20passed-brightgreen)](tests/)
 
 **MCP server for the Korean National Assembly Open API** ([열린국회정보](https://open.assembly.go.kr)) — query bills, members, vote results, committee composition, and bill proposers directly from Claude or any MCP-compatible AI client.
 
@@ -62,6 +62,7 @@ With open-assembly-mcp
 | Map the co-sponsorship network for housing policy bills | `search_bills` + `get_bill_proposers` |
 | Track which committee reviewed a bill and when | `get_bill_review` + `get_bill_detail` |
 | Compare yes/no/abstain rates across parties on a specific bill | `get_vote_results` + `get_member_info` |
+| Get individual member voting records to analyze party-line discipline | `get_member_votes` (filter by party or vote_result) |
 | List all bills proposed by a specific member | `search_bills` (proposer filter) |
 | Audit committee composition by party for a given assembly | `get_committee_members` |
 | Identify bills that passed vs. were scrapped in a policy domain | `search_bills` (proc_result filter) |
@@ -78,27 +79,24 @@ With open-assembly-mcp
 
 ## Available Tools
 
-### Core tools (endpoints verified February–March 2026)
+### Available tools (endpoints verified February–March 2026)
+
+All tools return `total_count` (total matching records) and `has_more` (whether additional pages exist) alongside results — giving Claude everything it needs to decide whether to paginate.
 
 | Tool | Description | Endpoint |
 |---|---|---|
-| `search_bills` | Search member-sponsored bills by assembly, keyword, proposer, result, or committee | `nzmimeepazxkubdpn` |
+| `search_bills` | Search member-sponsored bills by assembly, keyword, proposer, result, committee, or date range | `nzmimeepazxkubdpn` |
 | `get_bill_detail` | Full bill record including processing history, committee schedule, and plenary result | `ALLBILL` |
 | `get_member_info` | National Assembly member profiles: party, district, committee, election type | `nwvrqwxyaytdsfvhu` |
 | `get_vote_results` | Plenary vote tallies by bill: yes / no / abstain / absent counts | `ncocpgfiaoituanbr` |
 | `get_bill_review` | Bill review timeline through committee and plenary stages | `nwbpacrgavhjryiph` |
-| `get_bill_proposers` | Lead and co-sponsor list for a bill (requires `BILL_ID`) | `BILLINFOPPSR` |
+| `get_bill_proposers` | Lead and co-sponsor list for a bill (requires `BILL_ID` from `search_bills`) | `BILLINFOPPSR` |
+| `get_member_votes` | Per-member yes/no/abstain vote records for a specific bill (requires `BILL_ID` + `age`) | `nojepdqqaweusdfbi` |
 | `get_committee_members` | Committee member roster filtered by committee name | `nwvrqwxyaytdsfvhu` + filter |
 
-### Stub tools (Open API not available)
+**Coverage**: 16th–22nd Assembly (2000–present). Tools cover member-sponsored bills only; government-submitted bills are not available through the Open API.
 
-The following tools are registered but return a clear not-supported message. The underlying data exists on the Assembly website but is only distributed as file downloads, not callable Open API endpoints.
-
-| Tool | Data source | Workaround |
-|---|---|---|
-| `search_minutes` | Committee and plenary transcripts | [likms.assembly.go.kr/record](https://likms.assembly.go.kr/record/) |
-| `get_petitions` | Citizen petition registry | [petitions.assembly.go.kr](https://petitions.assembly.go.kr/) |
-| `get_bill_content` | Bill rationale and key provisions | Use `get_bill_detail` → `LINK_URL` |
+**Unavailable via Open API**: committee and plenary transcripts ([likms.assembly.go.kr/record](https://likms.assembly.go.kr/record/)), citizen petitions ([petitions.assembly.go.kr](https://petitions.assembly.go.kr/)), and bill full text (use `get_bill_detail` → `LINK_URL`).
 
 ---
 
@@ -169,6 +167,9 @@ their lead proposers with party affiliation.
 ```
 법제사법위원회 소속 의원 명단을 가져오고, 22대에서 해당 의원들이
 대표발의한 법률안 수를 각각 세어줘
+```
+```
+국민투표법 개정안 표결에서 더불어민주당 의원 중 반대표를 던진 사람이 있었나?
 ```
 
 Claude will call the appropriate tools, chain results, and return a structured summary.

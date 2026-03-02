@@ -6,3 +6,4 @@ build/
 .venv/
 .env
 .pytest_cache/
+uv.lock

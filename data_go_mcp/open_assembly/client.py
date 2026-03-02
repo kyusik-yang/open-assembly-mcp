@@ -10,15 +10,14 @@ load_dotenv()
 
 BASE_URL = "https://open.assembly.go.kr/portal/openapi"
 
-# Confirmed endpoint codes (verified 2026-02)
+# Confirmed endpoint codes (verified 2026-02/03)
 EP_BILLS = "nzmimeepazxkubdpn"          # 국회의원 발의법률안
 EP_BILL_DETAIL = "ALLBILL"              # 의안정보 통합 API
 EP_BILL_REVIEW = "nwbpacrgavhjryiph"    # 의안 처리·심사정보
 EP_MEMBER = "nwvrqwxyaytdsfvhu"         # 국회의원 정보 통합 API
 EP_VOTE = "ncocpgfiaoituanbr"           # 의안별 표결현황
-
-# Confirmed additional endpoints (verified 2026-03)
 EP_BILL_PROPOSERS = "BILLINFOPPSR"      # 의안 제안자정보 (requires BILL_ID)
+EP_MEMBER_VOTES = "nojepdqqaweusdfbi"  # 국회의원 본회의 표결정보 (requires BILL_ID + AGE)
 # EP_COMMITTEE_MEMBERS reuses EP_MEMBER with CMIT_NM filter
 
 # Not available as Open API (only file data): 회의록, 청원, 법률안 제안이유
@@ -45,27 +44,33 @@ class AssemblyAPIClient:
     def _base_params(self) -> dict[str, Any]:
         return {"KEY": self.api_key, "Type": "json"}
 
-    def _parse_response(self, data: dict, endpoint: str) -> list[dict]:
-        """열린국회 API 응답 파싱. INFO-200 = 빈 결과, INFO-000 = 정상."""
+    def _parse_response(self, data: dict, endpoint: str) -> tuple[list[dict], int]:
+        """열린국회 API 응답 파싱. INFO-200 = 빈 결과, INFO-000 = 정상.
+
+        Returns:
+            (rows, total_count): 결과 행 목록과 총 건수.
+        """
         body = data.get(endpoint, [])
         if not body:
             raise ValueError(f"Unexpected response structure for endpoint '{endpoint}'")
 
         head = body[0].get("head", [])
+        total_count = int(head[0].get("list_total_count", 0)) if head else 0
         result = head[1].get("RESULT", {}) if len(head) > 1 else {}
         code = result.get("CODE", "")
 
         if code == "INFO-200":
-            return []
+            return [], 0
         if code != "INFO-000":
             msg = result.get("MESSAGE", "Unknown API error")
             raise ValueError(f"API error {code}: {msg}")
 
         rows = body[1].get("row", []) if len(body) > 1 else []
         # 단건이면 dict, 다건이면 list
-        return rows if isinstance(rows, list) else [rows]
+        rows = rows if isinstance(rows, list) else [rows]
+        return rows, total_count
 
-    async def _get(self, endpoint: str, params: dict[str, Any]) -> list[dict]:
+    async def _get(self, endpoint: str, params: dict[str, Any]) -> tuple[list[dict], int]:
         """GET 요청 실행 및 응답 파싱."""
         merged = {**self._base_params(), **{k: v for k, v in params.items() if v is not None}}
         url = f"{BASE_URL}/{endpoint}"
@@ -81,7 +86,7 @@ class AssemblyAPIClient:
             raise ValueError(f"Request failed: {e}") from e
 
     # ------------------------------------------------------------------
-    # P1: 핵심 6개 Tool 메서드
+    # P1: 핵심 Tool 메서드
     # ------------------------------------------------------------------
 
     async def search_bills(
@@ -91,9 +96,11 @@ class AssemblyAPIClient:
         proposer: Optional[str] = None,
         proc_result: Optional[str] = None,
         committee: Optional[str] = None,
+        propose_dt_from: Optional[str] = None,
+        propose_dt_to: Optional[str] = None,
         page: int = 1,
         page_size: int = 10,
-    ) -> list[dict]:
+    ) -> tuple[list[dict], int]:
         """국회의원 발의법률안 목록 조회."""
         return await self._get(EP_BILLS, {
             "AGE": age,
@@ -101,11 +108,13 @@ class AssemblyAPIClient:
             "PROPOSER": proposer,
             "PROC_RESULT": proc_result,
             "COMMITTEE": committee,
+            "STR_DT": propose_dt_from,
+            "END_DT": propose_dt_to,
             "pIndex": page,
             "pSize": page_size,
         })
 
-    async def get_bill_detail(self, bill_no: str) -> list[dict]:
+    async def get_bill_detail(self, bill_no: str) -> tuple[list[dict], int]:
         """의안 상세정보 조회 (의안정보 통합 API)."""
         return await self._get(EP_BILL_DETAIL, {"BILL_NO": bill_no})
 
@@ -118,7 +127,7 @@ class AssemblyAPIClient:
         committee: Optional[str] = None,
         page: int = 1,
         page_size: int = 10,
-    ) -> list[dict]:
+    ) -> tuple[list[dict], int]:
         """국회의원 정보 조회."""
         return await self._get(EP_MEMBER, {
             "UNIT_CD": unit_cd,
@@ -137,7 +146,7 @@ class AssemblyAPIClient:
         bill_name: Optional[str] = None,
         page: int = 1,
         page_size: int = 10,
-    ) -> list[dict]:
+    ) -> tuple[list[dict], int]:
         """의안별 본회의 표결현황 조회."""
         return await self._get(EP_VOTE, {
             "AGE": age,
@@ -154,7 +163,7 @@ class AssemblyAPIClient:
         committee: Optional[str] = None,
         page: int = 1,
         page_size: int = 10,
-    ) -> list[dict]:
+    ) -> tuple[list[dict], int]:
         """의안 처리·심사정보 조회 (위원회 및 본회의 처리 경로)."""
         return await self._get(EP_BILL_REVIEW, {
             "AGE": age,
@@ -168,7 +177,7 @@ class AssemblyAPIClient:
     # P2: 추가 Tool 메서드
     # ------------------------------------------------------------------
 
-    async def get_bill_proposers(self, bill_id: str) -> list[dict]:
+    async def get_bill_proposers(self, bill_id: str) -> tuple[list[dict], int]:
         """의안 제안자(공동발의자) 정보 조회. (BILLINFOPPSR)
 
         Args:
@@ -176,13 +185,42 @@ class AssemblyAPIClient:
         """
         return await self._get(EP_BILL_PROPOSERS, {"BILL_ID": bill_id})
 
+    async def get_member_votes(
+        self,
+        bill_id: str,
+        age: str,
+        member_name: Optional[str] = None,
+        party: Optional[str] = None,
+        vote_result: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> tuple[list[dict], int]:
+        """국회의원 본회의 표결정보 조회. 특정 법안에 대한 의원별 찬반 기록.
+
+        Args:
+            bill_id: 의안ID — 필수 (search_bills 결과의 BILL_ID, 예: PRC_...)
+            age: 대수 — 필수 (예: "22")
+            member_name: 의원명 필터 (선택)
+            party: 정당명 필터 (선택)
+            vote_result: 표결결과 필터 — "찬성" | "반대" | "기권" (선택)
+        """
+        return await self._get(EP_MEMBER_VOTES, {
+            "BILL_ID": bill_id,
+            "AGE": age,
+            "HG_NM": member_name,
+            "POLY_NM": party,
+            "RESULT_VOTE_MOD": vote_result,
+            "pIndex": page,
+            "pSize": page_size,
+        })
+
     async def get_committee_members(
         self,
         unit_cd: str = "100022",
         committee: Optional[str] = None,
         page: int = 1,
         page_size: int = 50,
-    ) -> list[dict]:
+    ) -> tuple[list[dict], int]:
         """위원회 위원 명단 조회. 국회의원 정보 API(EP_MEMBER)에 위원회 필터 적용."""
         return await self._get(EP_MEMBER, {
             "UNIT_CD": unit_cd,
