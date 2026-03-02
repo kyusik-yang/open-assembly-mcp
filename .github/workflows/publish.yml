@@ -9,7 +9,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment: pypi  # optional: add branch protection in GitHub settings
+    environment: pypi
     permissions:
       id-token: write  # required for PyPI Trusted Publisher (OIDC, no token needed)
 
@@ -17,11 +17,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group dev
 
       - name: Run tests
-        run: uv run pytest tests/ -v
+        run: uv run --no-sync pytest tests/ -v
 
       - name: Build
         run: uv build
@@ -31,4 +32,4 @@ jobs:
         # Uses OIDC automatically — no PYPI_API_TOKEN needed
         # Requires Trusted Publisher configured at pypi.org:
         #   Owner: kyusik-yang  Repo: open-assembly-mcp
-        #   Workflow: publish.yml  Environment: pypi (or leave blank)
+        #   Workflow: publish.yml  Environment: (Any)
