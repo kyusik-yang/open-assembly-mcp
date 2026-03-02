@@ -316,4 +316,4 @@ This project was built following the architecture of [Koomook/data-go-mcp-server
 
 ---
 
-*Built with [Claude Code](https://claude.ai/code) — because the best way to make an AI tool for querying parliament is to have an AI write it.*
+*Built with [Claude Code](https://claude.ai/code) — because the best way to make an AI tool for querying a legislature is to have an AI write it.*
