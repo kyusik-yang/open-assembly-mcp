@@ -1,6 +1,6 @@
 # open-assembly-mcp
 
-[![PyPI](https://img.shields.io/pypi/v/data-go-mcp.open-assembly)](https://pypi.org/project/data-go-mcp.open-assembly/)
+[![PyPI](https://img.shields.io/pypi/v/open-assembly-mcp)](https://pypi.org/project/open-assembly-mcp/)
 [![GitHub](https://img.shields.io/badge/github-open--assembly--mcp-blue.svg?style=flat&logo=github)](https://github.com/kyusik-yang/open-assembly-mcp)
 [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
@@ -106,19 +106,19 @@ All tools return `total_count` (total matching records) and `has_more` (whether 
 ### Using uvx (recommended — no install needed)
 
 ```bash
-uvx data-go-mcp.open-assembly
+uvx open-assembly-mcp
 ```
 
 ### Using uv
 
 ```bash
-uv pip install data-go-mcp.open-assembly
+uv pip install open-assembly-mcp
 ```
 
 ### Using pip
 
 ```bash
-pip install data-go-mcp.open-assembly
+pip install open-assembly-mcp
 ```
 
 ---
@@ -135,7 +135,7 @@ Edit your Claude Desktop config file:
   "mcpServers": {
     "open-assembly": {
       "command": "uvx",
-      "args": ["data-go-mcp.open-assembly@latest"],
+      "args": ["open-assembly-mcp@latest"],
       "env": {
         "ASSEMBLY_API_KEY": "your-api-key-here"
       }
@@ -166,7 +166,7 @@ Or add it manually to `.claude/settings.json` in your project root:
   "mcpServers": {
     "open-assembly": {
       "command": "uvx",
-      "args": ["data-go-mcp.open-assembly@latest"],
+      "args": ["open-assembly-mcp@latest"],
       "env": {
         "ASSEMBLY_API_KEY": "your-api-key-here"
       }

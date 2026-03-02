@@ -1,5 +1,5 @@
 [project]
-name = "data-go-mcp.open-assembly"
+name = "open-assembly-mcp"
 version = "0.2.0"
 description = "MCP server for Korean National Assembly Open API (open.assembly.go.kr) — bills, members, votes, committee composition, and per-member vote records"
 readme = "README.md"
@@ -32,7 +32,7 @@ Documentation = "https://github.com/kyusik-yang/open-assembly-mcp#readme"
 "Bug Tracker" = "https://github.com/kyusik-yang/open-assembly-mcp/issues"
 
 [project.scripts]
-"data-go-mcp.open-assembly" = "data_go_mcp.open_assembly.server:main"
+"open-assembly-mcp" = "data_go_mcp.open_assembly.server:main"
 
 [build-system]
 requires = ["hatchling"]
