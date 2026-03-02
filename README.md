@@ -58,18 +58,19 @@ Claude chains the tools automatically and returns a structured summary.
 ## Available Tools
 
 All tools return `total_count` and `has_more` for transparent pagination.
-**Coverage**: 16th–22nd National Assembly (2000–present). Member-sponsored bills only.
 
-| Tool | Description |
-|---|---|
-| `search_bills` | Search bills by assembly, keyword, proposer, committee, date range, or outcome |
-| `get_bill_detail` | Full bill record including processing history and plenary result |
-| `get_member_info` | Member profiles: party, district, committee, election type |
-| `get_vote_results` | Plenary vote tallies per bill: yes / no / abstain counts |
-| `get_member_votes` | Per-member roll-call records for a specific bill |
-| `get_bill_proposers` | Lead and co-sponsor list for a bill |
-| `get_bill_review` | Bill review timeline through committee and plenary stages |
-| `get_committee_members` | Committee member roster |
+**Coverage by tool** (detailed coverage verification planned for a future release):
+
+| Tool | Reliable range | Notes |
+|---|---|---|
+| `search_bills` | 16th–22nd | Member-sponsored bills only (no government bills) |
+| `get_bill_detail` | 16th–22nd | |
+| `get_bill_review` | 16th–22nd | |
+| `get_member_info` | 16th–22nd | |
+| `get_committee_members` | 16th–22nd | |
+| `get_vote_results` | 19th–22nd recommended | Electronic vote records sparse before 19th Assembly |
+| `get_member_votes` | 18th–22nd recommended | Roll-call data available from ~18th Assembly onward |
+| `get_bill_proposers` | 16th–22nd | No assembly filter; uses bill ID directly |
 
 **Not available via Open API**: transcripts, citizen petitions, bill full text
 (use `get_bill_detail` → `LINK_URL` for the official bill page).
