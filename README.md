@@ -74,6 +74,18 @@ All tools return `total_count` and `has_more` for transparent pagination.
 
 ---
 
+## Updating
+
+`uvx` caches packages locally. If you installed a previous version, force a reinstall to get the latest:
+
+```bash
+uvx --reinstall open-assembly-mcp --setup
+```
+
+To update the server used by Claude Desktop, edit your config and change the `args` line to pin the new version, or leave it as `open-assembly-mcp@latest` to always pull the latest on startup.
+
+---
+
 ## Manual Config (alternative to --setup)
 
 Edit your Claude Desktop config file:

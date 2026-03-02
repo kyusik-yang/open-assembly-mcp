@@ -73,6 +73,18 @@ Claude가 내부적으로 도구들을 연결해서 결과를 돌려줍니다.
 
 ---
 
+## 업데이트
+
+`uvx`는 패키지를 로컬에 캐시합니다. 이전 버전이 설치되어 있다면 아래 명령으로 강제 재설치하세요:
+
+```bash
+uvx --reinstall open-assembly-mcp --setup
+```
+
+Claude Desktop config에 `open-assembly-mcp@latest`로 설정해두면 항상 최신 버전으로 실행됩니다.
+
+---
+
 ## 수동 설정 (--setup 대신)
 
 Claude Desktop 설정 파일 직접 편집:
