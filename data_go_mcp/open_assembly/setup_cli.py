@@ -11,6 +11,20 @@ import sys
 from pathlib import Path
 
 
+# ── ANSI colors (disabled automatically on Windows without ANSI support) ──────
+
+def _ansi(code: str, text: str) -> str:
+    if not sys.stdout.isatty():
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+def bold(t: str)  -> str: return _ansi("1", t)
+def cyan(t: str)  -> str: return _ansi("96", t)
+def green(t: str) -> str: return _ansi("92", t)
+def yellow(t: str)-> str: return _ansi("93", t)
+def dim(t: str)   -> str: return _ansi("2", t)
+
+
 # ── Config file paths ─────────────────────────────────────────────────────────
 
 def _claude_desktop_config_path() -> Path:
@@ -51,7 +65,7 @@ def _read_config(path: Path) -> dict:
         try:
             return json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
-            print(f"  Warning: could not parse existing config at {path}. Will create a new one.")
+            print(f"  {yellow('!')} Could not parse existing config — a new one will be created.")
     return {}
 
 
@@ -64,88 +78,96 @@ def _write_config(path: Path, config: dict) -> None:
 
 def run_setup() -> None:
     print()
-    print("=" * 60)
-    print("  open-assembly-mcp  --  Setup Wizard")
-    print("  Korean National Assembly MCP Server")
-    print("=" * 60)
+    print(cyan("  ┌─────────────────────────────────────────────────────┐"))
+    print(cyan("  │") + bold("        open-assembly-mcp  ·  Setup                 ") + cyan("│"))
+    print(cyan("  │") + dim("        Korean National Assembly  MCP Server         ") + cyan("│"))
+    print(cyan("  └─────────────────────────────────────────────────────┘"))
     print()
 
-    # Step 1: API key
-    print("Step 1/3  Get your API key  /  API 키 발급")
+    # ── Step 1: API key ───────────────────────────────────────────────────────
+
+    print(bold("  [1/3]  API Key"))
     print()
-    print("  Visit / 방문: https://open.assembly.go.kr")
-    print("  Sign up (free) → 마이페이지 → API 키 발급")
+    print(f"  To use this server, you need a free API key from:")
+    print(f"  이 서버를 사용하려면 무료 API 키가 필요합니다:")
     print()
-    print("  The key is free and takes about 2 minutes to get.")
-    print("  키 발급은 무료이며 약 2분이면 완료됩니다.")
+    print(f"    {cyan('https://open.assembly.go.kr')}")
+    print(f"    {dim('Sign up  →  마이페이지  →  API 키 발급  (approx. 2 min)')}")
     print()
-    print("  For academic research access issues, contact:")
-    print("  학술 연구 목적으로 이용에 어려움이 있으시면 이메일 주세요:")
-    print("  kyusik.yang@nyu.edu")
+    print(f"  {dim('For academic research access issues:  kyusik.yang@nyu.edu')}")
+    print(f"  {dim('학술 연구 목적 이용 문의:              kyusik.yang@nyu.edu')}")
     print()
 
     existing_key = os.getenv("ASSEMBLY_API_KEY", "")
     if existing_key:
-        print(f"  Found ASSEMBLY_API_KEY in environment ({existing_key[:6]}...)")
-        use_existing = input("  Use this key? [Y/n] ").strip().lower()
+        print(f"  {green('✔')} Found ASSEMBLY_API_KEY in environment  ({existing_key[:6]}···)")
+        use_existing = input("    Use this key? [Y/n]  ").strip().lower()
         api_key = existing_key if use_existing in ("", "y", "yes") else ""
     else:
         api_key = ""
 
     if not api_key:
-        api_key = input("  Paste your API key: ").strip()
+        api_key = input("  Enter API key:  ").strip()
 
     if not api_key:
-        print("\n  No API key provided. Exiting.")
+        print(f"\n  {yellow('!')} No key provided. Exiting.")
         sys.exit(1)
 
-    # Step 2: Validate key
+    # ── Step 2: Validate ──────────────────────────────────────────────────────
+
     print()
-    print("Step 2/3  Validating key...")
+    print(bold("  [2/3]  Validating key  /  키 검증 중..."))
+    print()
+
     if _test_api_key(api_key):
-        print("  Key is valid.")
+        print(f"  {green('✔')} Key is valid.  /  키가 유효합니다.")
     else:
-        print("  Warning: could not verify the key (network issue or invalid key).")
-        proceed = input("  Continue anyway? [y/N] ").strip().lower()
+        print(f"  {yellow('!')} Could not verify the key (network error or invalid key).")
+        print(f"      키를 확인할 수 없습니다 (네트워크 오류 또는 잘못된 키).")
+        proceed = input("    Continue anyway? [y/N]  ").strip().lower()
         if proceed not in ("y", "yes"):
             sys.exit(1)
 
-    # Step 3: Write Claude Desktop config
+    # ── Step 3: Write Claude Desktop config ───────────────────────────────────
+
     print()
-    print("Step 3/3  Configure Claude Desktop")
+    print(bold("  [3/3]  Configuring Claude Desktop"))
+    print()
+
     config_path = _claude_desktop_config_path()
-    print(f"  Config file: {config_path}")
+    print(f"  Config  {dim(str(config_path))}")
+    print()
 
     config = _read_config(config_path)
     config.setdefault("mcpServers", {})
 
     if "open-assembly" in config["mcpServers"]:
-        print("  'open-assembly' server already exists in config.")
-        overwrite = input("  Overwrite? [Y/n] ").strip().lower()
+        print(f"  {yellow('!')} An existing 'open-assembly' entry was found.")
+        overwrite = input("    Overwrite? [Y/n]  ").strip().lower()
         if overwrite not in ("", "y", "yes"):
-            print("  Skipped. Exiting.")
+            print(f"\n  {dim('Skipped. Exiting.')}")
             sys.exit(0)
 
     config["mcpServers"]["open-assembly"] = {
         "command": "uvx",
         "args": ["open-assembly-mcp@latest"],
-        "env": {
-            "ASSEMBLY_API_KEY": api_key,
-        },
+        "env": {"ASSEMBLY_API_KEY": api_key},
     }
 
     _write_config(config_path, config)
 
+    # ── Done ──────────────────────────────────────────────────────────────────
+
     print()
-    print("=" * 60)
-    print("  Setup complete!  /  설정 완료!")
+    print(cyan("  ┌─────────────────────────────────────────────────────┐"))
+    print(cyan("  │") + green(bold("  ✔  Setup complete!  ·  설정이 완료되었습니다.        ")) + cyan("│"))
+    print(cyan("  └─────────────────────────────────────────────────────┘"))
     print()
-    print("  Next steps  /  다음 단계:")
-    print("  1. Restart Claude Desktop  /  Claude Desktop 재시작")
-    print("  2. Open a new conversation and look for the tools icon")
-    print("     새 대화창을 열고 도구 아이콘을 확인하세요")
-    print("  3. Try asking:")
-    print("     - '22대 국회에서 발의된 AI 관련 법안 목록 알려줘'")
-    print("     - 'List AI-related bills from the 22nd Assembly'")
-    print("=" * 60)
+    print(bold("  Next steps  /  다음 단계"))
+    print()
+    print(f"  1.  Restart Claude Desktop  {dim('/ Claude Desktop 재시작')}")
+    print(f"  2.  Open a new conversation and look for the {bold('tools icon')}")
+    print(f"      {dim('새 대화창을 열고 도구 아이콘 (망치)을 확인하세요')}")
+    print(f"  3.  Try:  {cyan(repr('List AI-related bills from the 22nd Assembly'))}")
+    print(f"      또는:  {cyan(repr('22대 국회 AI 관련 법안 목록 알려줘'))}")
     print()
