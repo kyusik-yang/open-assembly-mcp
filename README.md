@@ -153,6 +153,9 @@ ASSEMBLY_API_KEY=your-key uv run python -m data_go_mcp.open_assembly.server
 
 ## Changelog
 
+### v0.2.2 (2026-03)
+- `--setup` wizard: bilingual prompts (EN/KR), academic contact info
+
 ### v0.2.1 (2026-03)
 - Added `--setup` wizard: interactive installer that auto-configures Claude Desktop
 
