@@ -1,5 +1,6 @@
 # open-assembly-mcp
 
+[![PyPI](https://img.shields.io/pypi/v/data-go-mcp.open-assembly)](https://pypi.org/project/data-go-mcp.open-assembly/)
 [![GitHub](https://img.shields.io/badge/github-open--assembly--mcp-blue.svg?style=flat&logo=github)](https://github.com/kyusik-yang/open-assembly-mcp)
 [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
@@ -147,6 +148,35 @@ Restart Claude Desktop after saving. The Assembly tools will appear in the tool 
 
 ---
 
+## Claude Code Setup
+
+If you use [Claude Code](https://claude.ai/code) (the CLI), add the server to your project config:
+
+```bash
+claude mcp add open-assembly \
+  --command uvx \
+  --args "data-go-mcp.open-assembly@latest" \
+  --env "ASSEMBLY_API_KEY=your-key-here"
+```
+
+Or add it manually to `.claude/settings.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "open-assembly": {
+      "command": "uvx",
+      "args": ["data-go-mcp.open-assembly@latest"],
+      "env": {
+        "ASSEMBLY_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+---
+
 ## Usage Examples
 
 Once connected, you can ask Claude questions like:
@@ -256,6 +286,21 @@ This project was built following the architecture of [Koomook/data-go-mcp-server
 ---
 
 *This project is not affiliated with or endorsed by the Korean National Assembly or open.assembly.go.kr. Please review the [열린국회정보 이용약관](https://open.assembly.go.kr) before use.*
+
+---
+
+---
+
+## Changelog
+
+### v0.2.0 (2026-03)
+- Added `get_member_votes` -- per-member roll-call records for any bill
+- All tools now return `total_count` and `has_more` for transparent pagination
+- Added `propose_dt_from` / `propose_dt_to` date filter to `search_bills`
+- Extended assembly coverage to 16th and 17th Assemblies (was 18th+)
+
+### v0.1.0 (2026-02)
+- Initial release: `search_bills`, `get_bill_detail`, `get_member_info`, `get_vote_results`, `get_bill_review`, `get_bill_proposers`, `get_committee_members`
 
 ---
 
