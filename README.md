@@ -380,6 +380,10 @@ ASSEMBLY_API_KEY=your-key uv run python -m data_go_mcp.open_assembly.server
 
 ## Changelog
 
+### v0.2.7 (2026-03)
+- Replaced all placeholder examples ("홍길동", "김OO", etc.) in README with real API query results
+- Updated scenario outputs with verified live data: 인공지능기본법 journey, 법원조직법 party-line vote, 이준석 profile, 과기위 pending bills, plenary agenda
+
 ### v0.2.6 (2026-03)
 - Added `get_bill_summary` convenience tool: chains detail + review + proposers + committee meetings in one parallel call
 - Rewrote all 12 tool docstrings with When-to-use, workflow hints, and BILL_ID vs BILL_NO disambiguation
