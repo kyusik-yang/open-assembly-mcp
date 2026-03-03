@@ -1,0 +1,76 @@
+<svg width="680" height="500" viewBox="0 0 680 500" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,-apple-system,'Segoe UI',sans-serif">
+
+  <!-- Window: warm white, Claude aesthetic -->
+  <rect width="680" height="500" rx="12" fill="#FDFCF8" stroke="#DDD8D0" stroke-width="1.5"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="680" height="44" rx="12" fill="#F7F5F0"/>
+  <rect x="0" y="32" width="680" height="12" fill="#F7F5F0"/>
+  <line x1="0" y1="44" x2="680" y2="44" stroke="#E8E4DC" stroke-width="1"/>
+
+  <!-- Traffic lights -->
+  <circle cx="20" cy="22" r="5.5" fill="#FF5F57"/>
+  <circle cx="40" cy="22" r="5.5" fill="#FEBC2E"/>
+  <circle cx="60" cy="22" r="5.5" fill="#28C840"/>
+
+  <!-- Window title -->
+  <text x="340" y="27" text-anchor="middle" font-size="13" font-weight="500" fill="#6B7280">Claude</text>
+
+  <!-- ── USER MESSAGE ── -->
+  <rect x="200" y="58" width="460" height="62" rx="18" fill="#EDECE8"/>
+  <text x="220" y="81"  font-size="14" fill="#1A1A1A">윤석열 대통령 탄핵소추안 (2024.12.14) 표결에서</text>
+  <text x="220" y="103" font-size="14" fill="#1A1A1A">정당별 투표 현황과 당론 이탈 의원을 알려줘.</text>
+  <text x="658" y="136" text-anchor="end" font-size="11" fill="#9CA3AF">You</text>
+
+  <!-- ── CLAUDE AVATAR + NAME ── -->
+  <!-- Claude brand: warm terracotta #C87050 -->
+  <circle cx="26" cy="158" r="14" fill="#C87050"/>
+  <text x="26" y="163" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">C</text>
+  <text x="48" y="163" font-size="13" font-weight="600" fill="#374151">Claude</text>
+
+  <!-- ── RESPONSE ── -->
+
+  <!-- Bill title -->
+  <text x="20" y="196" font-size="15" font-weight="700" fill="#111827">윤석열 대통령 탄핵소추안</text>
+
+  <!-- Date + status -->
+  <text x="20" y="218" font-size="12.5" fill="#6B7280">2024년 12월 14일 본회의 · 재적 300, 투표 300 · 탄핵소추 가결</text>
+
+  <!-- Totals -->
+  <text x="20" y="241" font-size="13.5" fill="#374151">전체: <tspan font-weight="700" fill="#16A34A">찬성 204</tspan>  /  <tspan font-weight="700" fill="#DC2626">반대 85</tspan>  /  <tspan fill="#6B7280">기권 3  (무효 8)</tspan></text>
+
+  <!-- Divider -->
+  <line x1="20" y1="255" x2="660" y2="255" stroke="#EBE7E0" stroke-width="1.5"/>
+
+  <!-- Section header -->
+  <text x="20" y="273" font-size="12" font-weight="600" fill="#9CA3AF">정당별 표결</text>
+
+  <!-- ── 더불어민주당 ── -->
+  <rect x="20" y="280" width="640" height="34" rx="8" fill="#EFF6FF"/>
+  <text x="34" y="301" font-size="13.5" font-weight="600" fill="#1D4ED8">더불어민주당</text>
+  <text x="172" y="301" font-size="13.5" fill="#374151"><tspan font-weight="700" fill="#16A34A">찬성 170</tspan>  /  반대 0  /  기권 0</text>
+
+  <!-- ── 국민의힘 ── -->
+  <rect x="20" y="318" width="640" height="34" rx="8" fill="#FEF2F2"/>
+  <text x="34" y="339" font-size="13.5" font-weight="600" fill="#BE123C">국민의힘</text>
+  <text x="172" y="339" font-size="13.5" fill="#374151"><tspan font-weight="700" fill="#16A34A">찬성 12</tspan>  /  <tspan font-weight="700" fill="#DC2626">반대 85</tspan>  /  기권+무효 11</text>
+  <text x="505" y="339" font-size="12" fill="#9CA3AF">(이탈 12명)</text>
+
+  <!-- ── 조국혁신당 ── -->
+  <rect x="20" y="356" width="640" height="34" rx="8" fill="#F0FDF4"/>
+  <text x="34" y="377" font-size="13.5" font-weight="600" fill="#15803D">조국혁신당</text>
+  <text x="172" y="377" font-size="13.5" fill="#374151"><tspan font-weight="700" fill="#16A34A">찬성 12</tspan>  /  반대 0  /  기권 0</text>
+
+  <!-- ── 기타·무소속 ── -->
+  <rect x="20" y="394" width="640" height="34" rx="8" fill="#F8F7F4"/>
+  <text x="34" y="415" font-size="13.5" fill="#374151">기타·무소속</text>
+  <text x="172" y="415" font-size="13.5" fill="#374151"><tspan font-weight="700" fill="#16A34A">찬성 10</tspan>  /  기권 3</text>
+
+  <!-- Divider -->
+  <line x1="20" y1="437" x2="660" y2="437" stroke="#EBE7E0" stroke-width="1.5"/>
+
+  <!-- Defectors section -->
+  <text x="20" y="455" font-size="12" font-weight="600" fill="#9CA3AF">국민의힘 당론 이탈 (찬성 투표, 총 12명)</text>
+  <text x="20" y="476" font-size="13" fill="#374151">안철수 (서울 노원병),  김상욱 (비례),  김예지 (비례)  등</text>
+
+</svg>

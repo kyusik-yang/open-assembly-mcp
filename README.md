@@ -9,24 +9,97 @@
 
 **MCP server for the Korean National Assembly Open API** ([열린국회정보](https://open.assembly.go.kr)) — query bills, members, vote results, committee composition, pending bills, plenary agenda, and per-member vote records directly from Claude or any MCP-compatible AI client.
 
+![Before vs After](assets/before-after.svg)
+
 ---
 
-## Quick Start
+## Demo
 
-**Prerequisites:** [Claude Desktop](https://claude.ai/download) must be installed.
+Ask Claude in natural language. Claude calls the right tools and chains them automatically.
 
-**Step 1.** Get a free API key at [open.assembly.go.kr](https://open.assembly.go.kr)
+![Demo: party-line voting analysis](assets/demo-voting.svg)
+
+---
+
+## Connecting to Claude
+
+There are three ways to use the Assembly tools, depending on which Claude interface you use.
+
+**Before any setup:** Get a free API key at [open.assembly.go.kr](https://open.assembly.go.kr)
 → Sign up → 마이페이지 → API 키 발급
 
-**Step 2.** Run the setup wizard:
+---
+
+### Option 1 — Claude Desktop (Recommended)
+
+Easiest path. The `--setup` wizard writes the config file for you.
+
+**Prerequisites:** [Claude Desktop](https://claude.ai/download) must be installed.
 
 ```bash
 uvx open-assembly-mcp --setup
 ```
 
-It prompts for your key, validates it, and writes the Claude Desktop config automatically.
+It prompts for your key, validates it, and writes the config automatically. Then restart Claude Desktop.
 
-**Step 3.** Restart Claude Desktop — the Assembly tools are ready.
+**Manual config** (skip the wizard) — edit the Claude Desktop config file directly:
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "open-assembly": {
+      "command": "uvx",
+      "args": ["open-assembly-mcp@latest"],
+      "env": {
+        "ASSEMBLY_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+Save and restart Claude Desktop.
+
+---
+
+### Option 2 — Claude Code (CLI)
+
+Best for researchers running Claude from the terminal. Three scope options:
+
+```bash
+# Local scope (default): stored in ~/.claude.json, applies only to the current project
+claude mcp add open-assembly \
+  --command uvx \
+  --args "open-assembly-mcp@latest" \
+  --env "ASSEMBLY_API_KEY=your-key-here"
+
+# User scope: available across all your projects
+claude mcp add open-assembly \
+  --scope user \
+  --command uvx \
+  --args "open-assembly-mcp@latest" \
+  --env "ASSEMBLY_API_KEY=your-key-here"
+
+# Project scope: saved to .mcp.json at the project root (git-committable, good for team sharing)
+claude mcp add open-assembly \
+  --scope project \
+  --command uvx \
+  --args "open-assembly-mcp@latest" \
+  --env "ASSEMBLY_API_KEY=your-key-here"
+```
+
+Verify it was added: `claude mcp list`
+
+---
+
+### Option 3 — Claude.ai web (claude.ai)
+
+The claude.ai web interface **does not support locally-running MCP servers**. It only connects to remote, HTTP-based servers hosted on public infrastructure.
+
+To use the Assembly tools from claude.ai, you would need to deploy the server publicly as a hosted HTTP endpoint. Use **Claude Desktop** or **Claude Code** instead.
 
 ---
 
@@ -244,39 +317,6 @@ To update the server used by Claude Desktop, edit your config and change the `ar
 
 ---
 
-## Manual Config (alternative to --setup)
-
-Edit your Claude Desktop config file:
-
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "open-assembly": {
-      "command": "uvx",
-      "args": ["open-assembly-mcp@latest"],
-      "env": {
-        "ASSEMBLY_API_KEY": "your-api-key-here"
-      }
-    }
-  }
-}
-```
-
----
-
-## Claude Code Setup
-
-```bash
-claude mcp add open-assembly \
-  --command uvx \
-  --args "open-assembly-mcp@latest" \
-  --env "ASSEMBLY_API_KEY=your-key-here"
-```
-
----
 
 ## Why this exists
 

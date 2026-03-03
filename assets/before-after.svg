@@ -1,0 +1,120 @@
+<svg width="680" height="390" viewBox="0 0 680 390" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,-apple-system,'Segoe UI',sans-serif">
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- LEFT PANEL — 기존 방식                     -->
+  <!-- ══════════════════════════════════════════ -->
+
+  <rect x="0" y="0" width="316" height="390" rx="12" fill="#F2F2EF" stroke="#CCCBC5" stroke-width="1.5"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="316" height="40" rx="12" fill="#ECEAE6"/>
+  <rect x="0" y="28" width="316" height="12" fill="#ECEAE6"/>
+  <line x1="0" y1="40" x2="316" y2="40" stroke="#D5D3CE" stroke-width="1"/>
+
+  <!-- Gray traffic lights -->
+  <circle cx="18" cy="20" r="5.5" fill="#C2C0BA"/>
+  <circle cx="36" cy="20" r="5.5" fill="#C2C0BA"/>
+  <circle cx="54" cy="20" r="5.5" fill="#C2C0BA"/>
+
+  <!-- Panel title -->
+  <text x="158" y="25" text-anchor="middle" font-size="12.5" font-weight="600" fill="#6B7280">기존 방식</text>
+
+  <!-- Sub-label -->
+  <text x="16" y="56" font-size="11" font-weight="600" fill="#9CA3AF">열린국회정보 API 수동 수집</text>
+
+  <!-- Step 1 -->
+  <circle cx="28" cy="76" r="9" fill="#9CA3AF"/>
+  <text x="28" y="80" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">1</text>
+  <text x="44" y="80" font-size="12.5" fill="#374151">사이트 접속 → 검색 조건 입력</text>
+
+  <!-- Step 2 -->
+  <circle cx="28" cy="118" r="9" fill="#9CA3AF"/>
+  <text x="28" y="122" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">2</text>
+  <text x="44" y="122" font-size="12.5" fill="#374151">결과 페이지별 수동 다운로드</text>
+  <text x="44" y="138" font-size="11" fill="#9CA3AF">50건/페이지 · 법안 500건 = 10번 반복</text>
+
+  <!-- Step 3 -->
+  <circle cx="28" cy="164" r="9" fill="#9CA3AF"/>
+  <text x="28" y="168" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">3</text>
+  <text x="44" y="168" font-size="12.5" fill="#374151">엑셀·CSV 병합 및 오류 정제</text>
+
+  <!-- Step 4 -->
+  <circle cx="28" cy="204" r="9" fill="#9CA3AF"/>
+  <text x="28" y="208" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">4</text>
+  <text x="44" y="208" font-size="12.5" fill="#374151">Python · R 분석 스크립트 작성</text>
+
+  <!-- Step 5 -->
+  <circle cx="28" cy="244" r="9" fill="#9CA3AF"/>
+  <text x="28" y="248" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">5</text>
+  <text x="44" y="248" font-size="12.5" fill="#374151">재질문 시 처음부터 반복</text>
+
+  <!-- Divider -->
+  <line x1="16" y1="272" x2="300" y2="272" stroke="#D5D3CE" stroke-width="1"/>
+
+  <!-- Time cost -->
+  <text x="158" y="308" text-anchor="middle" font-size="12.5" fill="#9CA3AF">연구 질문 1건당</text>
+  <text x="158" y="342" text-anchor="middle" font-size="26" font-weight="700" fill="#6B7280">수 시간</text>
+  <text x="158" y="370" text-anchor="middle" font-size="11.5" fill="#9CA3AF">⏱  반복 작업 · 오류 가능성</text>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- VS BADGE                                   -->
+  <!-- ══════════════════════════════════════════ -->
+
+  <circle cx="340" cy="195" r="22" fill="#1F2937"/>
+  <text x="340" y="201" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">VS</text>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- RIGHT PANEL — MCP 방식                     -->
+  <!-- ══════════════════════════════════════════ -->
+
+  <rect x="364" y="0" width="316" height="390" rx="12" fill="#FDFCF8" stroke="#DDD8D0" stroke-width="1.5"/>
+
+  <!-- Title bar -->
+  <rect x="364" y="0" width="316" height="40" rx="12" fill="#F7F5F0"/>
+  <rect x="364" y="28" width="316" height="12" fill="#F7F5F0"/>
+  <line x1="364" y1="40" x2="680" y2="40" stroke="#E8E4DC" stroke-width="1"/>
+
+  <!-- Colored traffic lights -->
+  <circle cx="382" cy="20" r="5.5" fill="#FF5F57"/>
+  <circle cx="400" cy="20" r="5.5" fill="#FEBC2E"/>
+  <circle cx="418" cy="20" r="5.5" fill="#28C840"/>
+
+  <!-- Panel title -->
+  <text x="522" y="25" text-anchor="middle" font-size="12.5" font-weight="600" fill="#6B7280">Claude</text>
+
+  <!-- User bubble -->
+  <rect x="408" y="50" width="256" height="56" rx="14" fill="#EDECE8"/>
+  <text x="422" y="71" font-size="12" fill="#1A1A1A">22대 AI 관련 법안 목록과 처리 결과</text>
+  <text x="422" y="91" font-size="12" fill="#1A1A1A">요약, 공동발의자를 알려줘.</text>
+  <text x="672" y="116" text-anchor="end" font-size="11" fill="#9CA3AF">You</text>
+
+  <!-- Claude avatar + name -->
+  <circle cx="378" cy="135" r="12" fill="#C87050"/>
+  <text x="378" y="140" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">C</text>
+  <text x="397" y="140" font-size="12" font-weight="600" fill="#374151">Claude</text>
+
+  <!-- Tool call box -->
+  <rect x="372" y="150" width="284" height="58" rx="6" fill="#F0EFEc"/>
+  <text x="382" y="167" font-size="10.5" font-family="'SFMono-Regular','Consolas',monospace" fill="#16A34A">✓  search_bills(age='22', keyword='AI')</text>
+  <text x="382" y="183" font-size="10.5" font-family="'SFMono-Regular','Consolas',monospace" fill="#9CA3AF">   → 47건 발견</text>
+  <text x="382" y="199" font-size="10.5" font-family="'SFMono-Regular','Consolas',monospace" fill="#16A34A">✓  get_bill_proposers()  × 4건</text>
+
+  <!-- Result separator -->
+  <line x1="372" y1="218" x2="656" y2="218" stroke="#EBE7E0" stroke-width="1"/>
+
+  <!-- Result -->
+  <text x="372" y="235" font-size="12.5" font-weight="700" fill="#111827">인공지능 관련 법률안 47건 (22대)</text>
+  <text x="372" y="253" font-size="12" fill="#374151">원안가결 <tspan font-weight="700">3건</tspan>  ·  수정가결 <tspan font-weight="700">1건</tspan>  ·  폐기 <tspan fill="#DC2626">28건</tspan>  ·  계류 <tspan fill="#D97706">15건</tspan></text>
+  <text x="372" y="270" font-size="12" fill="#6B7280">통과 법안 공동발의자 목록 포함</text>
+
+  <!-- Divider -->
+  <line x1="372" y1="285" x2="656" y2="285" stroke="#EBE7E0" stroke-width="1"/>
+
+  <!-- Time cost -->
+  <text x="522" y="315" text-anchor="middle" font-size="12.5" fill="#9CA3AF">연구 질문 1건당</text>
+  <text x="522" y="349" text-anchor="middle" font-size="26" font-weight="700" fill="#C87050">수 초</text>
+  <text x="522" y="375" text-anchor="middle" font-size="11.5" fill="#9CA3AF">⚡  자동 도구 체이닝 · 즉각 반환</text>
+
+</svg>
