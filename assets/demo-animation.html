@@ -391,59 +391,59 @@ async function typeText(speed = 38) {
 }
 
 async function runAnimation() {
-  await delay(800);
+  await delay(550);
 
   // 1. Type user message in input
-  await typeText(36);
-  await delay(500);
+  await typeText(24);
+  await delay(350);
 
   // 2. "Send" — clear input, show user bubble
   document.getElementById('inputField').innerHTML =
     '<span class="input-placeholder">메시지 입력...</span>';
   document.getElementById('sendBtn').classList.remove('active');
-  await delay(200);
+  await delay(150);
 
   show(document.getElementById('userMsg'));
-  await delay(600);
+  await delay(430);
 
   // 3. Claude row appears with thinking dots
   show(document.getElementById('claudeRow'));
-  await delay(900);
+  await delay(620);
 
   // 4. Tool 1 opens
   document.getElementById('thinking').style.display = 'none';
   const t1 = document.getElementById('tool1');
   t1.classList.add('open');
   document.getElementById('icon1').classList.add('spin');
-  await delay(900);
+  await delay(620);
 
   // 4b. Tool 1 result
   document.getElementById('icon1').className = 'tool-icon done';
   document.getElementById('icon1').textContent = '✓';
   document.getElementById('result1').classList.add('show');
-  await delay(700);
+  await delay(480);
 
   // 5. Tool 2 opens
   const t2 = document.getElementById('tool2');
   t2.classList.add('open');
   document.getElementById('icon2').classList.add('spin');
-  await delay(900);
+  await delay(620);
 
   document.getElementById('icon2').className = 'tool-icon done';
   document.getElementById('icon2').textContent = '✓';
   document.getElementById('result2').classList.add('show');
-  await delay(700);
+  await delay(480);
 
   // 6. Tool 3 opens
   const t3 = document.getElementById('tool3');
   t3.classList.add('open');
   document.getElementById('icon3').classList.add('spin');
-  await delay(900);
+  await delay(620);
 
   document.getElementById('icon3').className = 'tool-icon done';
   document.getElementById('icon3').textContent = '✓';
   document.getElementById('result3').classList.add('show');
-  await delay(800);
+  await delay(550);
 
   // 7. Stream response
   const resp = document.getElementById('response');
@@ -451,10 +451,10 @@ async function runAnimation() {
   const chunks = ['c0','c1','c2','c3'];
   for (const id of chunks) {
     document.getElementById(id).classList.add('show');
-    await delay(420);
+    await delay(290);
   }
 
-  await delay(2000);
+  await delay(1600);
 
   // 8. Restart loop
   location.reload();
