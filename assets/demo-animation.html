@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>open-assembly-mcp demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #E8E5DF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* ── Window chrome ── */
+  .window {
+    width: 780px;
+    height: 680px;
+    background: #FDFCF8;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .titlebar {
+    height: 44px;
+    background: #F5F3EE;
+    border-bottom: 1px solid #E5E2DA;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    flex-shrink: 0;
+  }
+  .dots { display: flex; gap: 8px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.red   { background: #FF5F57; }
+  .dot.yellow{ background: #FEBC2E; }
+  .dot.green { background: #28C840; }
+  .title-text {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6B7280;
+  }
+  .spacer { width: 52px; }
+
+  /* ── Chat area ── */
+  .chat {
+    flex: 1;
+    overflow: hidden;
+    padding: 20px 24px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── User bubble ── */
+  .user-msg {
+    align-self: flex-end;
+    max-width: 68%;
+    background: #EDEBE6;
+    border-radius: 18px 18px 4px 18px;
+    padding: 11px 16px;
+    font-size: 14px;
+    color: #1A1A1A;
+    line-height: 1.55;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .user-msg.show { opacity: 1; transform: translateY(0); }
+
+  /* ── Claude row ── */
+  .claude-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .claude-row.show { opacity: 1; transform: translateY(0); }
+
+  .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #C87050;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .claude-body { flex: 1; }
+  .claude-name {
+    font-size: 13px; font-weight: 600; color: #374151;
+    margin-bottom: 8px;
+  }
+
+  /* ── Tool call ── */
+  .tool-call {
+    background: #F5F3EE;
+    border: 1px solid #E5E2DA;
+    border-radius: 8px;
+    margin-bottom: 7px;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+  }
+  .tool-call.open {
+    max-height: 200px;
+    opacity: 1;
+  }
+
+  .tool-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: default;
+    user-select: none;
+  }
+  .tool-icon {
+    width: 16px; height: 16px;
+    border-radius: 3px;
+    background: #9CA3AF;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: #fff; font-weight: 700;
+  }
+  .tool-icon.done { background: #16A34A; }
+  .tool-icon.spin {
+    background: #9CA3AF;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  .tool-name {
+    font-size: 12.5px; font-weight: 600; color: #374151;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .tool-args {
+    font-size: 11.5px; color: #6B7280;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    margin-left: auto;
+  }
+
+  .tool-result {
+    border-top: 1px solid #E5E2DA;
+    padding: 7px 12px;
+    font-size: 12px; color: #4B5563;
+    line-height: 1.6;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease;
+  }
+  .tool-result.show { max-height: 120px; opacity: 1; }
+
+  /* ── Response text ── */
+  .response-text {
+    font-size: 14px;
+    color: #1A1A1A;
+    line-height: 1.7;
+    margin-top: 4px;
+  }
+  .response-text .chunk {
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .response-text .chunk.show { opacity: 1; }
+
+  .badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-green  { background: #DCFCE7; color: #16A34A; }
+  .badge-gray   { background: #F3F4F6; color: #374151; }
+  .badge-blue   { background: #DBEAFE; color: #1D4ED8; }
+
+  /* ── Input bar ── */
+  .input-bar {
+    height: 52px;
+    border-top: 1px solid #E8E5DF;
+    background: #F9F8F5;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .input-field {
+    flex: 1;
+    height: 34px;
+    background: #fff;
+    border: 1px solid #DDD9D1;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 13.5px;
+    color: #1A1A1A;
+    outline: none;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .input-placeholder { color: #9CA3AF; }
+  .cursor {
+    display: inline-block;
+    width: 2px; height: 14px;
+    background: #374151;
+    margin-left: 1px;
+    vertical-align: middle;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .send-btn {
+    width: 32px; height: 32px;
+    background: #1A1A1A;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.3;
+    transition: opacity 0.2s;
+  }
+  .send-btn.active { opacity: 1; }
+  .send-btn svg { width: 14px; height: 14px; fill: #fff; }
+
+  /* thinking dots */
+  .thinking {
+    display: flex; gap: 4px; align-items: center; padding: 2px 0;
+  }
+  .thinking span {
+    width: 7px; height: 7px; border-radius: 50%; background: #9CA3AF;
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+  .thinking span:nth-child(2) { animation-delay: 0.2s; }
+  .thinking span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%,80%,100% { transform: translateY(0); }
+    40% { transform: translateY(-5px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="window" id="win">
+  <!-- Title bar -->
+  <div class="titlebar">
+    <div class="dots">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+    </div>
+    <div class="title-text">Claude</div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat" id="chat">
+
+    <!-- User message -->
+    <div class="user-msg" id="userMsg">
+      22대 국회 인공지능기본법이 어떻게 만들어졌어?<br>
+      관련 법안 수, 주요 발의자, 본회의 표결 결과까지 알려줘.
+    </div>
+
+    <!-- Claude response -->
+    <div class="claude-row" id="claudeRow">
+      <div class="avatar">C</div>
+      <div class="claude-body">
+        <div class="claude-name">Claude</div>
+
+        <!-- thinking -->
+        <div class="thinking" id="thinking">
+          <span></span><span></span><span></span>
+        </div>
+
+        <!-- Tool call 1 -->
+        <div class="tool-call" id="tool1">
+          <div class="tool-header">
+            <div class="tool-icon" id="icon1">⚙</div>
+            <div class="tool-name">search_bills</div>
+            <div class="tool-args">age="22"  bill_name="인공지능"</div>
+          </div>
+          <div class="tool-result" id="result1">
+            → 59건 발견 · 대안반영폐기 28건 / 계류 중 31건<br>
+            대표 법안: 인공지능 발전과 신뢰 기반 조성 등에 관한 기본법 일부개정법률안 (최민희, 2025-09-05)
+          </div>
+        </div>
+
+        <!-- Tool call 2 -->
+        <div class="tool-call" id="tool2">
+          <div class="tool-header">
+            <div class="tool-icon" id="icon2">⚙</div>
+            <div class="tool-name">get_bill_review</div>
+            <div class="tool-args">age="22"  bill_no="2206772"</div>
+          </div>
+          <div class="tool-result" id="result2">
+            → BILL_NO 2206772 · 과학기술정보방송통신위원장<br>
+            위원회 2024-11-26 원안가결 · 본회의 2024-12-17 찬성 260 / 반대 1 / 기권 3<br>
+            공포 2025-01-21
+          </div>
+        </div>
+
+        <!-- Tool call 3 -->
+        <div class="tool-call" id="tool3">
+          <div class="tool-header">
+            <div class="tool-icon" id="icon3">⚙</div>
+            <div class="tool-name">get_bill_proposers</div>
+            <div class="tool-args">bill_id="PRC_E2D5D0B9..."</div>
+          </div>
+          <div class="tool-result" id="result3">
+            → 총 10명 · 대표발의: 최민희 (더불어민주당)<br>
+            공동발의: 허성무, 김우영, 박민규, 최혁진, 양문석, 김현, 한민수, 노종면, 조인철
+          </div>
+        </div>
+
+        <!-- Response text -->
+        <div class="response-text" id="response" style="display:none">
+          <div class="chunk" id="c0">
+            <strong>인공지능기본법 입법 경과</strong>
+          </div>
+          <div class="chunk" id="c1" style="margin-top:10px">
+            <span class="badge badge-gray">📋 관련 의원 발의안</span>&nbsp;
+            총 <strong>59건</strong> — 28건이 위원회 대안으로 흡수(대안반영폐기),
+            31건은 현재 계류 중입니다.
+          </div>
+          <div class="chunk" id="c2" style="margin-top:8px">
+            <span class="badge badge-blue">📅 입법 타임라인</span><br>
+            &nbsp;&nbsp;<code>2024-11-26</code>&nbsp; 과기위 상정 → 즉일 원안가결<br>
+            &nbsp;&nbsp;<code>2024-12-17</code>&nbsp; 본회의 — <strong style="color:#16A34A">찬성 260</strong> / 반대 1 / 기권 3 &nbsp;<span class="badge badge-green">원안가결</span><br>
+            &nbsp;&nbsp;<code>2025-01-21</code>&nbsp; 공포 (시행 2026-01-22)
+          </div>
+          <div class="chunk" id="c3" style="margin-top:8px">
+            <span class="badge badge-gray">👥 대표 공동발의 (민주당, 2025-09-05)</span><br>
+            최민희 · 허성무 · 김우영 · 박민규 · 최혁진 · 양문석 · 김현 · 한민수 · 노종면 · 조인철 <em style="color:#6B7280">(총 10명)</em>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /chat -->
+
+  <!-- Input bar -->
+  <div class="input-bar">
+    <div class="input-field" id="inputField">
+      <span class="input-placeholder" id="placeholder">메시지 입력...</span>
+      <span id="typed"></span><span class="cursor" id="cursor" style="display:none"></span>
+    </div>
+    <div class="send-btn" id="sendBtn">
+      <svg viewBox="0 0 16 16"><path d="M1.5 1.5l13 6.5-13 6.5V9.5l9-1.5-9-1.5V1.5z"/></svg>
+    </div>
+  </div>
+</div>
+
+<script>
+const QUERY = "22대 국회 인공지능기본법이 어떻게 만들어졌어? 관련 법안 수, 주요 발의자, 본회의 표결 결과까지 알려줘.";
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function show(el) { el.classList.add('show'); }
+
+async function typeText(speed = 38) {
+  const placeholder = document.getElementById('placeholder');
+  const typed = document.getElementById('typed');
+  const cursor = document.getElementById('cursor');
+  const sendBtn = document.getElementById('sendBtn');
+
+  placeholder.style.display = 'none';
+  cursor.style.display = 'inline-block';
+
+  for (let i = 0; i < QUERY.length; i++) {
+    typed.textContent = QUERY.slice(0, i + 1);
+    if (i > 3) sendBtn.classList.add('active');
+    await delay(speed);
+  }
+}
+
+async function runAnimation() {
+  await delay(800);
+
+  // 1. Type user message in input
+  await typeText(36);
+  await delay(500);
+
+  // 2. "Send" — clear input, show user bubble
+  document.getElementById('inputField').innerHTML =
+    '<span class="input-placeholder">메시지 입력...</span>';
+  document.getElementById('sendBtn').classList.remove('active');
+  await delay(200);
+
+  show(document.getElementById('userMsg'));
+  await delay(600);
+
+  // 3. Claude row appears with thinking dots
+  show(document.getElementById('claudeRow'));
+  await delay(900);
+
+  // 4. Tool 1 opens
+  document.getElementById('thinking').style.display = 'none';
+  const t1 = document.getElementById('tool1');
+  t1.classList.add('open');
+  document.getElementById('icon1').classList.add('spin');
+  await delay(900);
+
+  // 4b. Tool 1 result
+  document.getElementById('icon1').className = 'tool-icon done';
+  document.getElementById('icon1').textContent = '✓';
+  document.getElementById('result1').classList.add('show');
+  await delay(700);
+
+  // 5. Tool 2 opens
+  const t2 = document.getElementById('tool2');
+  t2.classList.add('open');
+  document.getElementById('icon2').classList.add('spin');
+  await delay(900);
+
+  document.getElementById('icon2').className = 'tool-icon done';
+  document.getElementById('icon2').textContent = '✓';
+  document.getElementById('result2').classList.add('show');
+  await delay(700);
+
+  // 6. Tool 3 opens
+  const t3 = document.getElementById('tool3');
+  t3.classList.add('open');
+  document.getElementById('icon3').classList.add('spin');
+  await delay(900);
+
+  document.getElementById('icon3').className = 'tool-icon done';
+  document.getElementById('icon3').textContent = '✓';
+  document.getElementById('result3').classList.add('show');
+  await delay(800);
+
+  // 7. Stream response
+  const resp = document.getElementById('response');
+  resp.style.display = 'block';
+  const chunks = ['c0','c1','c2','c3'];
+  for (const id of chunks) {
+    document.getElementById(id).classList.add('show');
+    await delay(420);
+  }
+
+  await delay(2000);
+
+  // 8. Restart loop
+  location.reload();
+}
+
+runAnimation();
+</script>
+</body>
+</html>

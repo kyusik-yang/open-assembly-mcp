@@ -17,7 +17,7 @@
 
 Ask Claude in natural language. Claude calls the right tools and chains them automatically.
 
-![Demo: party-line voting analysis](assets/demo-voting.svg)
+![Demo: Claude conversation with open-assembly-mcp](assets/demo-conversation.gif)
 
 ---
 

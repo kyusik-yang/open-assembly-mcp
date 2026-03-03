@@ -16,7 +16,7 @@
 
 자연어로 질문하면 Claude가 필요한 도구를 순서대로 호출합니다.
 
-![데모: 정당별 표결 분석](assets/demo-voting.svg)
+![데모: Claude 대화 시연](assets/demo-conversation.gif)
 
 ---
 
