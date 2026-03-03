@@ -1,0 +1,79 @@
+<svg width="680" height="358" viewBox="0 0 680 358" xmlns="http://www.w3.org/2000/svg"
+     font-family="'SFMono-Regular','Consolas','Liberation Mono',monospace">
+
+  <!-- ── Window chrome ── -->
+  <rect width="680" height="358" rx="12" fill="#181818" stroke="#404040" stroke-width="1.5"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="680" height="40" rx="12" fill="#2C2C2E"/>
+  <rect x="0" y="28" width="680" height="12" fill="#2C2C2E"/>
+  <line x1="0" y1="40" x2="680" y2="40" stroke="#444444" stroke-width="1"/>
+
+  <!-- Traffic lights -->
+  <circle cx="20" cy="20" r="5.5" fill="#FF5F57"/>
+  <circle cx="40" cy="20" r="5.5" fill="#FEBC2E"/>
+  <circle cx="60" cy="20" r="5.5" fill="#28C840"/>
+
+  <!-- Window title -->
+  <text x="340" y="26" text-anchor="middle" font-size="12" fill="#6B7280">zsh — uvx open-assembly-mcp --setup</text>
+
+  <!-- ── Shell prompt ── -->
+  <text x="14" y="58" font-size="10.5">
+    <tspan fill="#28C840">❯</tspan>
+    <tspan fill="#A0A0A0"> uvx open-assembly-mcp --setup</tspan>
+  </text>
+
+  <!-- ── ASCII art — 6 lines, teal→indigo gradient ── -->
+  <text xml:space="preserve" x="14" y="76"  font-size="9" fill="#00D2BE">   ___                      _                           _     _       </text>
+  <text xml:space="preserve" x="14" y="90"  font-size="9" fill="#00C3D2">  / _ \ _ __   ___ _ __    / \   ___ ___  ___ _ __ ___ | |__ | |_   _ </text>
+  <text xml:space="preserve" x="14" y="104" font-size="9" fill="#1EB4E1"> | | | | '_ \ / _ \ '_ \  / _ \ / __/ __|/ _ \ '_ ` _ \| '_ \| | | | |</text>
+  <text xml:space="preserve" x="14" y="118" font-size="9" fill="#3CA5EB"> | |_| | |_) |  __/ | | |/ ___ \\__ \__ \  __/ | | | | | |_) | | |_| |</text>
+  <text xml:space="preserve" x="14" y="132" font-size="9" fill="#5A96F0">  \___/| .__/ \___|_| |_/_/   \_\___/___/\___|_| |_| |_|_.__/|_|\__, |</text>
+  <text xml:space="preserve" x="14" y="146" font-size="9" fill="#6E8CF5">       |_|                                                       |___/ </text>
+
+  <!-- ── Separator + header ── -->
+  <line x1="14" y1="158" x2="666" y2="158" stroke="#2E2E2E" stroke-width="1"/>
+  <text x="14" y="174" font-size="10.5">
+    <tspan font-weight="700" fill="#00D2BE">open-assembly-mcp</tspan>
+    <tspan fill="#444444">  ·  </tspan>
+    <tspan fill="#5A5A5A">Korean National Assembly MCP Server</tspan>
+  </text>
+  <line x1="14" y1="184" x2="666" y2="184" stroke="#2E2E2E" stroke-width="1"/>
+
+  <!-- ── Step [1/3] API Key ── -->
+  <text x="14" y="204" font-size="11.5">
+    <tspan font-weight="700" fill="#00D2BE">[1/3]</tspan>
+    <tspan fill="#DDDDDD" font-weight="700">  API Key</tspan>
+  </text>
+  <text x="14" y="218" font-size="10" fill="#555555">        열린국회정보 API 키 입력</text>
+
+  <!-- ── Instructions ── -->
+  <text x="14" y="236" font-size="10" fill="#888888">  Obtain a free API key from the National Assembly Open API portal.</text>
+  <text x="14" y="250" font-size="10" fill="#555555">  국회 열린국회정보 포털에서 무료 API 키를 발급받으세요.</text>
+
+  <!-- ── URL ── -->
+  <text x="14" y="268" font-size="10">
+    <tspan fill="#555555">    </tspan>
+    <tspan fill="#00D2BE">→  </tspan>
+    <tspan font-weight="700" fill="#58A6FF">https://open.assembly.go.kr</tspan>
+  </text>
+  <text x="14" y="282" font-size="9.5" fill="#555555">       Sign up  →  마이페이지  →  인증키 신청/관리  (~2 min)</text>
+
+  <!-- ── Research contact ── -->
+  <text x="14" y="298" font-size="10" fill="#555555">  Research access inquiries / 학술 연구 이용 문의</text>
+  <text x="14" y="312" font-size="10">
+    <tspan fill="#555555">  </tspan>
+    <tspan fill="#58A6FF">kyusik.yang@nyu.edu</tspan>
+  </text>
+
+  <!-- ── Input prompt ── -->
+  <text x="14" y="337" font-size="11">
+    <tspan fill="#DDDDDD" font-weight="700">  Paste your API key:  </tspan>
+  </text>
+
+  <!-- Blinking cursor (x = 14 + 23 chars * 6.6px/char ≈ 166) -->
+  <rect x="166" y="325" width="7" height="13" fill="#00D2BE" rx="1">
+    <animate attributeName="opacity" values="1;0;1" dur="1.1s" repeatCount="indefinite"/>
+  </rect>
+
+</svg>

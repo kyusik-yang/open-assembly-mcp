@@ -1,0 +1,100 @@
+<style>
+.ky-data {
+  font-family: monospace;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 0 48px;
+}
+
+.ky-tool {
+  border-top: 1.5px solid #222;
+  padding: 36px 0;
+}
+
+.ky-tool-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.ky-tool-title {
+  font-size: 1.05em;
+  font-weight: bold;
+  letter-spacing: 0.03em;
+}
+
+.ky-tool-links {
+  display: flex;
+  gap: 8px;
+}
+
+.ky-tool-links a {
+  font-size: 0.8em;
+  color: #555;
+  text-decoration: none;
+  padding: 2px 8px;
+  border: 1px solid #bbb;
+}
+
+.ky-tool-links a:hover {
+  background: #f0f0f0;
+  color: #111;
+}
+
+.ky-tool-desc {
+  font-size: 0.88em;
+  line-height: 1.75;
+  color: #333;
+  margin: 0 0 22px;
+  max-width: 640px;
+}
+
+.ky-tool-img {
+  width: 100%;
+  max-width: 680px;
+  display: block;
+  border: 1px solid #ddd;
+}
+</style>
+
+<div class="ky-data">
+
+  <!-- open-assembly-mcp -->
+  <div class="ky-tool">
+    <div class="ky-tool-header">
+      <span class="ky-tool-title">open-assembly-mcp</span>
+      <div class="ky-tool-links">
+        <a href="https://github.com/kyusik-yang/open-assembly-mcp" target="_blank">GitHub</a>
+        <a href="https://pypi.org/project/open-assembly-mcp/" target="_blank">PyPI</a>
+      </div>
+    </div>
+    <p class="ky-tool-desc">
+      MCP server connecting Claude to the Korean National Assembly Open API (열린국회정보).
+      Enables natural-language queries over legislative data: bills from the 16th–22nd Assembly,
+      plenary vote records with per-member breakdowns, committee composition,
+      co-sponsorship networks, and pending legislation.
+      Eliminates hours of manual data collection per research question.
+    </p>
+    <img class="ky-tool-img"
+         src="https://raw.githubusercontent.com/kyusik-yang/open-assembly-mcp/main/assets/terminal-setup.svg"
+         alt="open-assembly-mcp setup wizard terminal"/>
+    <img class="ky-tool-img" style="margin-top:16px;"
+         src="https://raw.githubusercontent.com/kyusik-yang/open-assembly-mcp/main/assets/before-after.svg"
+         alt="open-assembly-mcp: manual workflow vs MCP"/>
+  </div>
+
+  <!-- 추가 도구는 아래에 동일한 형식으로 붙여넣으면 됩니다.
+  <div class="ky-tool">
+    <div class="ky-tool-header">
+      <span class="ky-tool-title">next-tool-name</span>
+      <div class="ky-tool-links">
+        <a href="#" target="_blank">GitHub</a>
+      </div>
+    </div>
+    <p class="ky-tool-desc">설명...</p>
+  </div>
+  -->
+
+</div>
