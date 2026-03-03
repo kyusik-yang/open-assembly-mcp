@@ -32,26 +32,156 @@ It prompts for your key, validates it, and writes the Claude Desktop config auto
 
 ## Usage Examples
 
-Once connected, ask Claude in natural language (Korean or English):
+Ask Claude in natural language (Korean or English). Claude chains the tools automatically.
 
+---
+
+### Scenario 1 — Find and filter bills in a policy domain
+
+> **"22대 국회에서 발의된 인공지능 관련 법률안 목록을 찾아줘. 처리 결과별로 요약하고, 통과된 법안은 공동발의자도 알려줘."**
+
+Claude calls:
+1. `search_bills(age="22", bill_name="인공지능", page_size=50)` → 47 bills found
+2. For each passed bill: `get_bill_proposers(bill_id="PRC_...")` → co-sponsor lists
+
+**Sample output:**
 ```
-22대 국회에서 발의된 AI 관련 법률안을 찾아줘
-```
-```
-반도체특별법의 표결 결과와 공동발의자 명단을 알려줘
-```
-```
-Find all housing-related bills in the 22nd Assembly that passed,
-and list their lead proposers with party affiliation.
-```
-```
-Which members of the 법제사법위원회 proposed the most bills in the 22nd Assembly?
-```
-```
-Did any 더불어민주당 members vote against 국민투표법 개정안?
+인공지능 관련 법률안 47건 (22대)
+
+처리 결과:
+  원안가결  3건 — 대표발의자: 김OO, 이OO, 박OO
+  수정가결  1건 — 대표발의자: 최OO
+  폐기     28건
+  계류 중  15건
+
+통과된 법안 공동발의자:
+  인공지능산업육성법안 (원안가결)
+    홍길동 (민주당), 김철수 (민주당), ...  총 22명
+  ...
 ```
 
-Claude chains the tools automatically and returns a structured summary.
+---
+
+### Scenario 2 — Trace a single bill's full legislative journey
+
+> **"반도체특별법 (의안번호 2216983)의 입법 여정을 처음부터 끝까지 보여줘. 언제 발의됐고, 어느 위원회에서 얼마나 걸렸는지, 본회의 표결 결과도 알려줘."**
+
+Claude calls:
+1. `get_bill_review(age="22", bill_no="2216983")` → committee + plenary timeline
+2. `get_bill_committee_review(bill_id="PRC_...")` → committee meeting dates
+3. `get_bill_detail(bill_no="2216983")` → full metadata + LINK_URL
+
+**Sample output:**
+```
+반도체산업경쟁력강화특별법안 (의안번호 2216983)
+발의일: 2023-11-08  대표발의자: 이OO  소관위원회: 산업통상자원중소벤처기업위원회
+
+위원회 심사:
+  2023-11-15  산자위 상정
+  2023-12-07  산자위 의결 (원안가결)
+
+본회의:
+  2024-01-09  의결 — 찬성 180 / 반대 92 / 기권 5
+  2024-01-30  공포 (법률 제19XXX호)
+
+원문 링크: https://likms.assembly.go.kr/bill/...
+```
+
+---
+
+### Scenario 3 — Analyze party-line voting on a bill
+
+> **"22대 국회에서 국민투표법 개정안 표결에서 각 정당 의원들은 어떻게 투표했나? 당론을 이탈한 의원이 있었나?"**
+
+Claude calls:
+1. `get_vote_results(age="22", bill_name="국민투표법")` → finds bill + aggregate counts + BILL_ID
+2. `get_member_votes(bill_id="PRC_...", age="22")` → 300 rows, one per member
+
+**Sample output:**
+```
+국민투표법 일부개정법률안 (2024-06-XX 의결)
+전체: 찬성 180 / 반대 110 / 기권 7
+
+정당별 표결:
+  더불어민주당  찬성 163 / 반대 0  / 기권 3   (이탈 3명)
+  국민의힘     찬성  0  / 반대 107 / 기권 2   (이탈 2명)
+  조국혁신당   찬성 12  / 반대 0  / 기권 0
+
+당론 이탈:
+  민주당 기권: 김OO (서울OO), 이OO (경기OO), 박OO (부산OO)
+  국민의힘 기권: 최OO (대구OO), 정OO (서울OO)
+```
+
+---
+
+### Scenario 4 — Profile a single member's legislative activity
+
+> **"이준석 의원 (22대)의 입법 활동을 요약해줘. 어떤 법안을 발의했고, 최근 표결에서 여당 vs 야당 법안에 어떻게 투표했나?"**
+
+Claude calls:
+1. `get_member_info(age="22", name="이준석")` → party, district, committee
+2. `search_bills(age="22", proposer="이준석", page_size=100)` → all sponsored bills
+3. `get_vote_results(age="22", page_size=20)` → recent voted bills
+4. `get_member_votes(bill_id=..., age="22", member_name="이준석")` × 20 bills
+
+**Sample output:**
+```
+이준석 (개혁신당 | 서울 노원갑 | 22대)
+소속 위원회: 행정안전위원회
+
+발의 법안: 총 8건
+  원안가결 1건 / 폐기 2건 / 계류 중 5건
+
+최근 표결 (20건):
+  찬성 12 / 반대 6 / 기권 2
+  여당 제출 법안:  찬성 4 / 반대 6
+  야당 제출 법안:  찬성 8 / 반대 0
+```
+
+---
+
+### Scenario 5 — Check pending legislation in a committee
+
+> **"과학기술정보방송통신위원회에 현재 계류 중인 법안은 몇 개야? AI·반도체 관련 법안만 따로 봐줘."**
+
+Claude calls:
+1. `get_pending_bills(age="22", committee="과학기술정보방송통신위원회", page_size=100)` → 127 bills
+2. (filters in memory for AI/semiconductor keywords)
+
+**Sample output:**
+```
+과기위 계류의안: 총 127건 (2025-03 기준)
+
+AI·반도체 관련 (키워드 필터):
+  인공지능기본법 관련      12건
+  반도체·소부장 관련       8건
+  방송·통신 디지털 전환    31건
+  기타                    76건
+
+가장 오래된 계류 법안:
+  2022-07-05 발의 — OOO법 일부개정안 (이OO)
+  2022-09-14 발의 — OOO에 관한 법률안 (김OO)
+```
+
+---
+
+### Scenario 6 — Check what's on the next plenary agenda
+
+> **"다음 본회의에 상정될 법안 목록을 알려줘."**
+
+Claude calls:
+1. `get_plenary_agenda(age="22", page_size=30)` → upcoming agenda items
+
+**Sample output:**
+```
+본회의 부의안건 (22대, 조회일 기준 최신)
+
+총 14건:
+  1. 전기사업법 일부개정법률안 (2200XXX)
+  2. 개인정보보호법 일부개정법률안 (2201XXX)
+  3. 국가재정법 일부개정법률안 (2202XXX)
+  ...
+```
 
 ---
 
@@ -59,7 +189,28 @@ Claude chains the tools automatically and returns a structured summary.
 
 All tools return `total_count` and `has_more` for transparent pagination.
 
-**Coverage by tool** (detailed coverage verification planned for a future release):
+### Quick Reference
+
+| Tool | Key parameters | Returns |
+|---|---|---|
+| `search_bills` | `age`, `bill_name`, `proposer`, `proc_result`, `committee`, `propose_dt_from/to` | `bills[]`, `total_count`, `has_more` |
+| `get_bill_detail` | `bill_no` (BILL_NO) | `bill{}` |
+| `get_bill_review` | `age`, `bill_no`, `committee` | `reviews[]`, `total_count`, `has_more` |
+| `get_bill_proposers` | `bill_id` (BILL_ID) | `proposers[]` |
+| `get_bill_committee_review` | `bill_id` (BILL_ID) | `meetings[]` |
+| `get_member_info` | `age`, `name`, `party`, `district`, `committee` | `members[]`, `total_count`, `has_more` |
+| `get_committee_members` | `age`, `committee` | `members[]`, `total_count`, `has_more` |
+| `get_vote_results` | `age`, `bill_no`, `bill_name` | `votes[]` with `YES_TCNT`, `NO_TCNT`, `BLANK_TCNT`, `BILL_ID` |
+| `get_member_votes` | `bill_id` (BILL_ID), `age`, `member_name`, `party`, `vote_result` | `votes[]` with per-member `RESULT_VOTE_MOD` |
+| `get_pending_bills` | `age`, `bill_name`, `committee`, `proposer` | `bills[]`, `total_count`, `has_more` |
+| `get_plenary_agenda` | `age`, `session` | `agenda_items[]`, `total_count`, `has_more` |
+
+> **BILL_ID vs BILL_NO** — many tools need `BILL_ID` (the internal ID, starts with `PRC_...`),
+> not `BILL_NO` (the public 7-digit number like `2216983`). Both are returned by `search_bills`
+> and `get_pending_bills`. Tools that need `BILL_ID`: `get_bill_proposers`,
+> `get_member_votes`, `get_bill_committee_review`.
+
+### Coverage by Assembly
 
 | Tool | Reliable range | Notes |
 |---|---|---|
@@ -69,11 +220,11 @@ All tools return `total_count` and `has_more` for transparent pagination.
 | `get_member_info` | 16th–22nd | |
 | `get_committee_members` | 16th–22nd | |
 | `get_vote_results` | 19th–22nd recommended | Electronic vote records sparse before 19th Assembly |
-| `get_member_votes` | 18th–22nd recommended | Roll-call data available from ~18th Assembly onward; default page_size=300 fetches all members in one call |
-| `get_bill_proposers` | 16th–22nd | No assembly filter; uses bill ID directly |
+| `get_member_votes` | 18th–22nd recommended | Roll-call data from ~18th Assembly onward; default page_size=300 fetches all ~300 members in one call |
+| `get_bill_proposers` | 16th–22nd | |
 | `get_pending_bills` | 22nd recommended | Bills not yet processed; ~8,900 in the 22nd Assembly |
-| `get_plenary_agenda` | 22nd recommended | Bills scheduled for upcoming plenary session |
-| `get_bill_committee_review` | 16th–22nd | Committee meetings for a specific bill (requires BILL_ID) |
+| `get_plenary_agenda` | 22nd recommended | Bills scheduled for the next plenary session |
+| `get_bill_committee_review` | 16th–22nd | Committee meetings for a specific bill |
 
 **Not available via Open API**: transcripts, citizen petitions, bill full text
 (use `get_bill_detail` → `LINK_URL` for the official bill page).
@@ -142,11 +293,14 @@ With MCP:    ask Claude in one sentence → tools chain automatically → result
 | Task | Tools used |
 |---|---|
 | Co-sponsorship network for a policy domain | `search_bills` + `get_bill_proposers` |
-| Party-line discipline on a specific vote | `get_member_votes` (filter by party) |
-| Full legislative career of a single member | `search_bills` (proposer filter) |
-| Committee composition by party | `get_committee_members` |
-| Bill timeline from filing to promulgation | `get_bill_review` + `get_bill_detail` |
+| Party-line discipline on a specific vote | `get_vote_results` + `get_member_votes` (party filter) |
 | Cross-party voting coalitions | `get_vote_results` + `get_member_votes` |
+| Full legislative career of a single member | `search_bills` (proposer filter) + `get_member_votes` |
+| Committee composition by party | `get_committee_members` |
+| Bill timeline from filing to promulgation | `get_bill_review` + `get_bill_committee_review` + `get_bill_detail` |
+| Currently active legislation in a policy area | `get_pending_bills` (committee/keyword filter) |
+| Upcoming plenary votes | `get_plenary_agenda` |
+| Majority-building analysis for a passed bill | `get_bill_proposers` + `get_member_votes` |
 
 ---
 
