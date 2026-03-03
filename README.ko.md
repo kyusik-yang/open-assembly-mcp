@@ -195,6 +195,7 @@ Claude 호출:
 | `get_pending_bills` | 22대 권장 | 미처리 계류의안; 22대 기준 약 8,900건 |
 | `get_plenary_agenda` | 22대 권장 | 본회의 상정 예정 안건 목록 |
 | `get_bill_committee_review` | 16~22대 | 특정 의안의 위원회 심사 회의정보 (BILL_ID 필요) |
+| `get_bill_summary` | 16~22대 | **편의 도구** — 상세정보+처리타임라인+공동발의자+위원회 회의를 한 번에 조회 |
 
 **Open API 미제공 항목**: 회의록, 청원, 법안 전문
 (`get_bill_detail` → `LINK_URL`에서 공식 의안 페이지 확인 가능).
@@ -291,6 +292,12 @@ uv run pytest tests/ -v
 ---
 
 ## 변경 이력
+
+### v0.2.6 (2026-03)
+- `get_bill_summary` 편의 도구 추가: 상세정보+처리타임라인+공동발의자+위원회 회의를 병렬 호출로 한 번에 반환
+- 12개 도구 docstring 전면 개선: When-to-use, 워크플로 힌트, BILL_ID vs BILL_NO 구분 명시
+- API 클라이언트에 명시적 TimeoutException 처리 추가
+- test_client.py에 신규 3개 엔드포인트 + timeout 테스트 추가 (36 → 46개)
 
 ### v0.2.5 (2026-03)
 - 신규 도구 3개: `get_pending_bills` (계류의안), `get_plenary_agenda` (본회의부의안건), `get_bill_committee_review` (위원회 심사 회의정보)

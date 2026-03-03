@@ -249,6 +249,164 @@ class TestGetMemberVotes:
         assert total == 0
 
 
+def _make_api_response(endpoint: str, rows: list, total: int) -> dict:
+    """Build a minimal valid API response fixture for a given endpoint."""
+    return {
+        endpoint: [
+            {
+                "head": [
+                    {"list_total_count": total},
+                    {"RESULT": {"CODE": "INFO-000", "MESSAGE": "정상 처리되었습니다."}},
+                ]
+            },
+            {"row": rows},
+        ]
+    }
+
+
+def _make_empty_response(endpoint: str) -> dict:
+    return {
+        endpoint: [
+            {
+                "head": [
+                    {"list_total_count": 0},
+                    {"RESULT": {"CODE": "INFO-200", "MESSAGE": "검색된 데이터가 없습니다."}},
+                ]
+            }
+        ]
+    }
+
+
+class TestGetPendingBills:
+    @pytest.mark.asyncio
+    async def test_calls_correct_endpoint(self, mock_env):
+        response = _make_api_response(
+            "nwbqublzajtcqpdae",
+            [{"BILL_NO": "2217500", "BILL_NAME": "계류법안"}],
+            total=8900,
+        )
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                rows, total = await client.get_pending_bills(age="22")
+
+        assert len(rows) == 1
+        assert total == 8900
+        assert "nwbqublzajtcqpdae" in mock_get.call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_passes_age_and_filters(self, mock_env):
+        response = _make_empty_response("nwbqublzajtcqpdae")
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                await client.get_pending_bills(
+                    age="22", committee="법제사법위원회", proposer="홍길동"
+                )
+
+        params = mock_get.call_args[1]["params"]
+        assert params["AGE"] == "22"
+        assert params["COMMITTEE"] == "법제사법위원회"
+        assert params["PROPOSER"] == "홍길동"
+
+
+class TestGetPlenaryAgenda:
+    @pytest.mark.asyncio
+    async def test_calls_correct_endpoint(self, mock_env):
+        response = _make_api_response(
+            "nayjnliqaexiioauy",
+            [{"BILL_NO": "2217501", "BILL_NAME": "부의법안", "SESS_NO": "1"}],
+            total=3,
+        )
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                rows, total = await client.get_plenary_agenda(age="22")
+
+        assert len(rows) == 1
+        assert total == 3
+        assert "nayjnliqaexiioauy" in mock_get.call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_session_filter_passed(self, mock_env):
+        response = _make_empty_response("nayjnliqaexiioauy")
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                await client.get_plenary_agenda(age="22", session="2")
+
+        params = mock_get.call_args[1]["params"]
+        assert params["AGE"] == "22"
+        assert params["SESS_NO"] == "2"
+
+
+class TestGetBillCommitteeReview:
+    @pytest.mark.asyncio
+    async def test_calls_correct_endpoint(self, mock_env):
+        response = _make_api_response(
+            "BILLJUDGECONF",
+            [{"BILL_ID": "PRC_TEST123", "CMIT_NM": "법제사법위원회", "MTG_DT": "20240315"}],
+            total=2,
+        )
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                rows, total = await client.get_bill_committee_review(bill_id="PRC_TEST123")
+
+        assert len(rows) == 1
+        assert total == 2
+        assert rows[0]["CMIT_NM"] == "법제사법위원회"
+        assert "BILLJUDGECONF" in mock_get.call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_passes_bill_id(self, mock_env):
+        response = _make_empty_response("BILLJUDGECONF")
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                await client.get_bill_committee_review(bill_id="PRC_ABCDEF")
+
+        params = mock_get.call_args[1]["params"]
+        assert params["BILL_ID"] == "PRC_ABCDEF"
+
+
+class TestTimeoutHandling:
+    @pytest.mark.asyncio
+    async def test_timeout_raises_descriptive_error(self, mock_env):
+        """TimeoutException이 명확한 에러 메시지와 함께 ValueError로 변환되는지 확인."""
+        import httpx
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_get.side_effect = httpx.TimeoutException("Connection timed out")
+
+            async with AssemblyAPIClient() as client:
+                with pytest.raises(ValueError, match="timed out"):
+                    await client.search_bills(age="22")
+
+
 class TestGetMemberInfo:
     @pytest.mark.asyncio
     async def test_get_member_info_calls_correct_endpoint(self, mock_env):

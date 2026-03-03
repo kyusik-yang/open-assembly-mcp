@@ -81,6 +81,8 @@ class AssemblyAPIClient:
             resp = await self.client.get(url, params=merged)
             resp.raise_for_status()
             return self._parse_response(resp.json(), endpoint)
+        except httpx.TimeoutException as e:
+            raise ValueError(f"Request timed out after 30s — API may be slow, try again: {e}") from e
         except httpx.HTTPStatusError as e:
             raise ValueError(f"HTTP {e.response.status_code}: {e.response.text}") from e
         except ValueError:
@@ -104,7 +106,11 @@ class AssemblyAPIClient:
         page: int = 1,
         page_size: int = 10,
     ) -> tuple[list[dict], int]:
-        """국회의원 발의법률안 목록 조회."""
+        """국회의원 발의법률안 목록 조회.
+
+        NOTE: This endpoint uses "COMMITTEE" (not "COMMITTEE_NM") for committee filter.
+        get_bill_review uses "COMMITTEE_NM" — this is an API-level inconsistency.
+        """
         return await self._get(EP_BILLS, {
             "AGE": age,
             "BILL_NAME": bill_name,

@@ -394,3 +394,76 @@ class TestGetBillCommitteeReviewTool:
         assert result["count"] == 0
         assert result["meetings"] == []
         assert "BILL_ID" in result["message"]
+
+
+class TestGetBillSummaryTool:
+    @pytest.mark.asyncio
+    async def test_chains_four_calls_successfully(self):
+        """get_bill_summary가 detail + review + proposers + meetings를 취합하는지 확인."""
+        from data_go_mcp.open_assembly.server import get_bill_summary
+
+        detail_row = {"BILL_NO": "2216983", "BILL_NM": "테스트법안", "LINK_URL": "https://example.com"}
+        review_row = {"BILL_ID": "PRC_TEST123", "BILL_NM": "테스트법안", "COMMITTEE_NM": "법제사법위원회"}
+        proposer_rows = [{"PPSR_NM": "홍길동", "PPSR_POLY_NM": "민주당"}]
+        meeting_rows = [{"CMIT_NM": "법제사법위원회", "MTG_DT": "20240315"}]
+
+        mock_client = AsyncMock()
+        mock_client.get_bill_detail.return_value = ([detail_row], 1)
+        mock_client.get_bill_review.return_value = ([review_row], 1)
+        mock_client.get_bill_proposers.return_value = (proposer_rows, 1)
+        mock_client.get_bill_committee_review.return_value = (meeting_rows, 1)
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            result = await get_bill_summary(age="22", bill_no="2216983")
+
+        assert result["bill_no"] == "2216983"
+        assert result["detail"]["BILL_NO"] == "2216983"
+        assert result["review"]["BILL_ID"] == "PRC_TEST123"
+        assert len(result["proposers"]) == 1
+        assert len(result["committee_meetings"]) == 1
+        assert result["errors"] == {}
+        assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_partial_failure_returns_errors_dict(self):
+        """서브 호출 일부 실패 시 errors 딕셔너리에 기록되는지 확인."""
+        from data_go_mcp.open_assembly.server import get_bill_summary
+
+        review_row = {"BILL_ID": "PRC_TEST123", "BILL_NM": "테스트법안"}
+
+        mock_client = AsyncMock()
+        mock_client.get_bill_detail.side_effect = ValueError("API error")
+        mock_client.get_bill_review.return_value = ([review_row], 1)
+        mock_client.get_bill_proposers.return_value = ([], 0)
+        mock_client.get_bill_committee_review.return_value = ([], 0)
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            result = await get_bill_summary(age="22", bill_no="9999999")
+
+        assert "detail" in result["errors"]
+        assert result["detail"] is None
+        assert result["review"] is not None
+
+    @pytest.mark.asyncio
+    async def test_no_bill_id_from_review_skips_dependent_calls(self):
+        """review에서 BILL_ID를 얻지 못하면 proposers/meetings 호출이 스킵되는지 확인."""
+        from data_go_mcp.open_assembly.server import get_bill_summary
+
+        mock_client = AsyncMock()
+        mock_client.get_bill_detail.return_value = ([], 0)
+        mock_client.get_bill_review.return_value = ([], 0)  # no rows = no BILL_ID
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            result = await get_bill_summary(age="22", bill_no="0000000")
+
+        # proposers and committee_meetings calls should not have been made
+        mock_client.get_bill_proposers.assert_not_called()
+        mock_client.get_bill_committee_review.assert_not_called()
+        assert "proposers" in result["errors"]
+        assert "committee_meetings" in result["errors"]
