@@ -111,78 +111,86 @@ Ask Claude in natural language (Korean or English). Claude chains the tools auto
 
 ### Scenario 1 — Find and filter bills in a policy domain
 
-> **"22대 국회에서 발의된 인공지능 관련 법률안 목록을 찾아줘. 처리 결과별로 요약하고, 통과된 법안은 공동발의자도 알려줘."**
+> **"22대 국회에서 발의된 인공지능 관련 법률안 목록을 찾아줘. 처리 결과별로 요약하고, 대안반영폐기된 법안 하나의 공동발의자도 알려줘."**
 
 Claude calls:
-1. `search_bills(age="22", bill_name="인공지능", page_size=50)` → 47 bills found
-2. For each passed bill: `get_bill_proposers(bill_id="PRC_...")` → co-sponsor lists
+1. `search_bills(age="22", bill_name="인공지능", page_size=50)` → 59 bills found
+2. For a 대안반영폐기 bill: `get_bill_proposers(bill_id="PRC_...")` → co-sponsor list
 
-**Sample output:**
+**Sample output (real data, 2026-03):**
 ```
-인공지능 관련 법률안 47건 (22대)
+인공지능 관련 법률안 59건 (22대)
 
 처리 결과:
-  원안가결  3건 — 대표발의자: 김OO, 이OO, 박OO
-  수정가결  1건 — 대표발의자: 최OO
-  폐기     28건
-  계류 중  15건
+  대안반영폐기  28건  ← 위원회 대안(인공지능기본법)으로 흡수
+  계류 중       31건
 
-통과된 법안 공동발의자:
-  인공지능산업육성법안 (원안가결)
-    홍길동 (민주당), 김철수 (민주당), ...  총 22명
-  ...
+최근 발의 법안:
+  인공지능 발전과 신뢰 기반 조성 등에 관한 기본법 일부개정법률안  이상휘  2026-02-12
+  중소기업 인공지능 전환 지원에 관한 법률안                      김종민  2026-02-09
+  인공지능 데이터센터 진흥 및 기반 조성에 관한 법률안             김장겸  2026-02-04
+
+대안반영폐기 법안 공동발의자:
+  인공지능 발전과 신뢰 기반 조성 등에 관한 기본법 일부개정법률안 (최민희, 2025-09-05)
+    최민희 (민주당), 허성무 (민주당), 김우영 (민주당), 박민규 (민주당),
+    최혁진 (민주당), 양문석 (민주당), 김현 (민주당), 한민수 (민주당),
+    노종면 (민주당), 조인철 (민주당)  총 10명
 ```
 
 ---
 
 ### Scenario 2 — Trace a single bill's full legislative journey
 
-> **"반도체특별법 (의안번호 2216983)의 입법 여정을 처음부터 끝까지 보여줘. 언제 발의됐고, 어느 위원회에서 얼마나 걸렸는지, 본회의 표결 결과도 알려줘."**
+> **"인공지능기본법 (의안번호 2206772)의 입법 여정을 처음부터 끝까지 보여줘. 위원회 심사 일정, 본회의 표결 결과, 공포일까지 알려줘."**
 
 Claude calls:
-1. `get_bill_review(age="22", bill_no="2216983")` → committee + plenary timeline
-2. `get_bill_committee_review(bill_id="PRC_...")` → committee meeting dates
-3. `get_bill_detail(bill_no="2216983")` → full metadata + LINK_URL
+1. `get_bill_review(age="22", bill_no="2206772")` → committee + plenary timeline
+2. `get_bill_detail(bill_no="2206772")` → full metadata + LINK_URL
 
-**Sample output:**
+**Sample output (real data, 2026-03):**
 ```
-반도체산업경쟁력강화특별법안 (의안번호 2216983)
-발의일: 2023-11-08  대표발의자: 이OO  소관위원회: 산업통상자원중소벤처기업위원회
+인공지능 발전과 신뢰 기반 조성 등에 관한 기본법안 (BILL_NO 2206772)
+발의자: 과학기술정보방송통신위원장
+소관위원회: 과학기술정보방송통신위원회
 
 위원회 심사:
-  2023-11-15  산자위 상정
-  2023-12-07  산자위 의결 (원안가결)
+  2024-11-26  과기위 상정
+  2024-11-26  과기위 의결 (원안가결)
 
 본회의:
-  2024-01-09  의결 — 찬성 180 / 반대 92 / 기권 5
-  2024-01-30  공포 (법률 제19XXX호)
+  2024-12-17  의결 — 찬성 260 / 반대 1 / 기권 3  (원안가결)
+  2024-12-26  정부 이송
+  2025-01-10  정부 이송 완료
+  2025-01-21  공포
 
-원문 링크: https://likms.assembly.go.kr/bill/...
+원문 링크: https://likms.assembly.go.kr/bill/billDetail.do?billId=PRC_R2V4H1W1T2K5M1O6E4Q9T0V7Q9S0U0
 ```
 
 ---
 
 ### Scenario 3 — Analyze party-line voting on a bill
 
-> **"22대 국회에서 국민투표법 개정안 표결에서 각 정당 의원들은 어떻게 투표했나? 당론을 이탈한 의원이 있었나?"**
+> **"22대 국회에서 법원조직법 개정안 표결에서 각 정당 의원들은 어떻게 투표했나? 당론을 이탈한 의원이 있었나?"**
 
 Claude calls:
-1. `get_vote_results(age="22", bill_name="국민투표법")` → finds bill + aggregate counts + BILL_ID
-2. `get_member_votes(bill_id="PRC_...", age="22")` → 300 rows, one per member
+1. `get_vote_results(age="22", bill_name="법원조직법")` → finds bill + aggregate counts + BILL_ID
+2. `get_member_votes(bill_id="PRC_H2W6O0K2D1T1Y2B0O5J2K5Q5A8Z0Y3", age="22")` → 295 rows, one per member
 
-**Sample output:**
+**Sample output (real data, BILL_NO 2216843):**
 ```
-국민투표법 일부개정법률안 (2024-06-XX 의결)
-전체: 찬성 180 / 반대 110 / 기권 7
+법원조직법 일부개정법률안(대안)(법제사법위원장) (2026-02 의결)
+전체: 찬성 173 / 반대 73 / 기권 1
 
 정당별 표결:
-  더불어민주당  찬성 163 / 반대 0  / 기권 3   (이탈 3명)
-  국민의힘     찬성  0  / 반대 107 / 기권 2   (이탈 2명)
-  조국혁신당   찬성 12  / 반대 0  / 기권 0
+  더불어민주당  찬성 152 / 기권 1  / 불참 9
+  국민의힘     반대  70 / 불참 36
+  조국혁신당   찬성  12
+  진보당       찬성   4
+  개혁신당     반대   2 / 불참 1
+  무소속       찬성   3 / 불참 3
 
 당론 이탈:
-  민주당 기권: 김OO (서울OO), 이OO (경기OO), 박OO (부산OO)
-  국민의힘 기권: 최OO (대구OO), 정OO (서울OO)
+  민주당 기권 1명: 이학영 (경기 군포시)
 ```
 
 ---
@@ -197,18 +205,21 @@ Claude calls:
 3. `get_vote_results(age="22", page_size=20)` → recent voted bills
 4. `get_member_votes(bill_id=..., age="22", member_name="이준석")` × 20 bills
 
-**Sample output:**
+**Sample output (real data, 2026-03):**
 ```
-이준석 (개혁신당 | 서울 노원갑 | 22대)
-소속 위원회: 행정안전위원회
+이준석 (개혁신당 | 경기 화성시을 | 22대)
+소속 위원회: 과학기술정보방송통신위원회
 
-발의 법안: 총 8건
-  원안가결 1건 / 폐기 2건 / 계류 중 5건
+발의 법안: 총 14건
+  대안반영폐기 1건 / 계류 중 13건
 
-최근 표결 (20건):
-  찬성 12 / 반대 6 / 기권 2
-  여당 제출 법안:  찬성 4 / 반대 6
-  야당 제출 법안:  찬성 8 / 반대 0
+최근 발의 법안:
+  전자상거래 등에서의 소비자보호에 관한 법률 일부개정법률안  2026-02-25
+  정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안  2026-02-05
+  소득세법 일부개정법률안  2025-08-19
+
+최근 표결 50건:
+  찬성 13 / 불참 37
 ```
 
 ---
@@ -218,22 +229,21 @@ Claude calls:
 > **"과학기술정보방송통신위원회에 현재 계류 중인 법안은 몇 개야? AI·반도체 관련 법안만 따로 봐줘."**
 
 Claude calls:
-1. `get_pending_bills(age="22", committee="과학기술정보방송통신위원회", page_size=100)` → 127 bills
-2. (filters in memory for AI/semiconductor keywords)
+1. `get_pending_bills(age="22", committee="과학기술정보방송통신위원회", page_size=100)` → 12,505 bills
+2. `get_pending_bills(age="22", committee="과학기술정보방송통신위원회", bill_name="인공지능")` → 31 AI bills
 
-**Sample output:**
+**Sample output (real data, 2026-03):**
 ```
-과기위 계류의안: 총 127건 (2025-03 기준)
+과기위 계류의안: 총 12,505건 (2026-03 기준)
 
 AI·반도체 관련 (키워드 필터):
-  인공지능기본법 관련      12건
-  반도체·소부장 관련       8건
-  방송·통신 디지털 전환    31건
-  기타                    76건
+  인공지능 관련   31건
+  반도체 관련      3건
 
-가장 오래된 계류 법안:
-  2022-07-05 발의 — OOO법 일부개정안 (이OO)
-  2022-09-14 발의 — OOO에 관한 법률안 (김OO)
+인공지능 관련 최근 발의:
+  인공지능 발전과 신뢰 기반 조성 등에 관한 기본법 일부개정법률안  이상휘   2026-02-12
+  중소기업 인공지능 전환 지원에 관한 법률안                      김종민   2026-02-09
+  국방인공지능법안                                              유용원·부승찬  2026-01-27
 ```
 
 ---
@@ -245,14 +255,18 @@ AI·반도체 관련 (키워드 필터):
 Claude calls:
 1. `get_plenary_agenda(age="22", page_size=30)` → upcoming agenda items
 
-**Sample output:**
+**Sample output (real data, 2026-03):**
 ```
 본회의 부의안건 (22대, 조회일 기준 최신)
 
-총 14건:
-  1. 전기사업법 일부개정법률안 (2200XXX)
-  2. 개인정보보호법 일부개정법률안 (2201XXX)
-  3. 국가재정법 일부개정법률안 (2202XXX)
+총 101건:
+  1. [기후에너지환경노동위원회] 산업안전보건법 일부개정법률안(대안)  (2216964)
+  2. [기후에너지환경노동위원회] 환경오염시설의 통합관리에 관한 법률 일부개정법률안(대안)  (2216963)
+  3. [기후에너지환경노동위원회] 노동감독관 직무집행법안(대안)  (2216962)
+  4. [기후에너지환경노동위원회] 산업재해보상보험법 일부개정법률안(대안)  (2216961)
+  5. [기후에너지환경노동위원회] 근로기준법 일부개정법률안(대안)  (2216960)
+  6. [정보위원회] 국가정보원직원법 일부개정법률안(대안)  (2216812)
+  7. [기후위기 특별위원회] 기후위기 대응을 위한 탄소중립·녹색성장 기본법 일부개정법률안(대안)  (2216802)
   ...
 ```
 
