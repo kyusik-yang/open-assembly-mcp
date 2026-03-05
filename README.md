@@ -4,7 +4,7 @@
 [![GitHub](https://img.shields.io/badge/github-open--assembly--mcp-blue.svg?style=flat&logo=github)](https://github.com/kyusik-yang/open-assembly-mcp)
 [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-46%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-27%20passed-brightgreen)](tests/)
 [![한국어](https://img.shields.io/badge/docs-한국어-blue)](README.ko.md)
 
 **MCP server for the Korean National Assembly Open API** ([열린국회정보](https://open.assembly.go.kr)) — query bills, members, vote results, committee composition, pending bills, plenary agenda, and per-member vote records directly from Claude or any MCP-compatible AI client.
@@ -114,7 +114,7 @@ Ask Claude in natural language (Korean or English). Claude chains the tools auto
 > **"22대 국회에서 발의된 인공지능 관련 법률안 목록을 찾아줘. 처리 결과별로 요약하고, 대안반영폐기된 법안 하나의 공동발의자도 알려줘."**
 
 Claude calls:
-1. `search_bills(age="22", bill_name="인공지능", page_size=50)` → 59 bills found
+1. `search_bills(assembly="22", bill_name="인공지능", page_size=50)` → 59 bills found
 2. For a 대안반영폐기 bill: `get_bill_proposers(bill_id="PRC_...")` → co-sponsor list
 
 **Sample output (real data, 2026-03):**
@@ -144,7 +144,7 @@ Claude calls:
 > **"인공지능기본법 (의안번호 2206772)의 입법 여정을 처음부터 끝까지 보여줘. 위원회 심사 일정, 본회의 표결 결과, 공포일까지 알려줘."**
 
 Claude calls:
-1. `get_bill_review(age="22", bill_no="2206772")` → committee + plenary timeline
+1. `get_bill_review(assembly="22", bill_no="2206772")` → committee + plenary timeline
 2. `get_bill_detail(bill_no="2206772")` → full metadata + LINK_URL
 
 **Sample output (real data, 2026-03):**
@@ -173,8 +173,8 @@ Claude calls:
 > **"22대 국회에서 법원조직법 개정안 표결에서 각 정당 의원들은 어떻게 투표했나? 당론을 이탈한 의원이 있었나?"**
 
 Claude calls:
-1. `get_vote_results(age="22", bill_name="법원조직법")` → finds bill + aggregate counts + BILL_ID
-2. `get_member_votes(bill_id="PRC_H2W6O0K2D1T1Y2B0O5J2K5Q5A8Z0Y3", age="22")` → 295 rows, one per member
+1. `get_vote_results(assembly="22", bill_name="법원조직법")` → finds bill + aggregate counts + BILL_ID
+2. `get_member_votes(bill_id="PRC_H2W6O0K2D1T1Y2B0O5J2K5Q5A8Z0Y3", assembly="22")` → 295 rows, one per member
 
 **Sample output (real data, BILL_NO 2216843):**
 ```
@@ -200,10 +200,10 @@ Claude calls:
 > **"이준석 의원 (22대)의 입법 활동을 요약해줘. 어떤 법안을 발의했고, 최근 표결에서 여당 vs 야당 법안에 어떻게 투표했나?"**
 
 Claude calls:
-1. `get_member_info(age="22", name="이준석")` → party, district, committee
-2. `search_bills(age="22", proposer="이준석", page_size=100)` → all sponsored bills
-3. `get_vote_results(age="22", page_size=20)` → recent voted bills
-4. `get_member_votes(bill_id=..., age="22", member_name="이준석")` × 20 bills
+1. `get_member_info(assembly="22", name="이준석")` → party, district, committee
+2. `search_bills(assembly="22", proposer="이준석", page_size=100)` → all sponsored bills
+3. `get_vote_results(assembly="22", page_size=20)` → recent voted bills
+4. `get_member_votes(bill_id=..., assembly="22", member_name="이준석")` × 20 bills
 
 **Sample output (real data, 2026-03):**
 ```
@@ -229,8 +229,8 @@ Claude calls:
 > **"과학기술정보방송통신위원회에 현재 계류 중인 법안은 몇 개야? AI·반도체 관련 법안만 따로 봐줘."**
 
 Claude calls:
-1. `get_pending_bills(age="22", committee="과학기술정보방송통신위원회", page_size=100)` → 12,505 bills
-2. `get_pending_bills(age="22", committee="과학기술정보방송통신위원회", bill_name="인공지능")` → 31 AI bills
+1. `get_pending_bills(assembly="22", committee="과학기술정보방송통신위원회", page_size=100)` → 12,505 bills
+2. `get_pending_bills(assembly="22", committee="과학기술정보방송통신위원회", bill_name="인공지능")` → 31 AI bills
 
 **Sample output (real data, 2026-03):**
 ```
@@ -253,7 +253,7 @@ AI·반도체 관련 (키워드 필터):
 > **"다음 본회의에 상정될 법안 목록을 알려줘."**
 
 Claude calls:
-1. `get_plenary_agenda(age="22", page_size=30)` → upcoming agenda items
+1. `get_plenary_agenda(assembly="22", page_size=30)` → upcoming agenda items
 
 **Sample output (real data, 2026-03):**
 ```
@@ -280,17 +280,17 @@ All tools return `total_count` and `has_more` for transparent pagination.
 
 | Tool | Key parameters | Returns |
 |---|---|---|
-| `search_bills` | `age`, `bill_name`, `proposer`, `proc_result`, `committee`, `propose_dt_from/to` | `bills[]`, `total_count`, `has_more` |
+| `search_bills` | `assembly`, `bill_name`, `proposer`, `proc_result`, `committee`, `propose_dt_from/to` | `bills[]`, `total_count`, `has_more` |
 | `get_bill_detail` | `bill_no` (BILL_NO) | `bill{}` |
-| `get_bill_review` | `age`, `bill_no`, `committee` | `reviews[]`, `total_count`, `has_more` |
+| `get_bill_review` | `assembly`, `bill_no`, `committee` | `reviews[]`, `total_count`, `has_more` |
 | `get_bill_proposers` | `bill_id` (BILL_ID) | `proposers[]` |
 | `get_bill_committee_review` | `bill_id` (BILL_ID) | `meetings[]` |
-| `get_member_info` | `age`, `name`, `party`, `district`, `committee` | `members[]`, `total_count`, `has_more` |
-| `get_committee_members` | `age`, `committee` | `members[]`, `total_count`, `has_more` |
-| `get_vote_results` | `age`, `bill_no`, `bill_name` | `votes[]` with `YES_TCNT`, `NO_TCNT`, `BLANK_TCNT`, `BILL_ID` |
-| `get_member_votes` | `bill_id` (BILL_ID), `age`, `member_name`, `party`, `vote_result` | `votes[]` with per-member `RESULT_VOTE_MOD` |
-| `get_pending_bills` | `age`, `bill_name`, `committee`, `proposer` | `bills[]`, `total_count`, `has_more` |
-| `get_plenary_agenda` | `age`, `session` | `agenda_items[]`, `total_count`, `has_more` |
+| `get_member_info` | `assembly`, `name`, `party`, `district`, `committee` | `members[]`, `total_count`, `has_more` |
+| `get_committee_members` | `assembly`, `committee` | `members[]`, `total_count`, `has_more` |
+| `get_vote_results` | `assembly`, `bill_no`, `bill_name` | `votes[]` with `YES_TCNT`, `NO_TCNT`, `BLANK_TCNT`, `BILL_ID` |
+| `get_member_votes` | `bill_id` (BILL_ID), `assembly`, `member_name`, `party`, `vote_result` | `votes[]` with per-member `RESULT_VOTE_MOD` |
+| `get_pending_bills` | `assembly`, `bill_name`, `committee`, `proposer` | `bills[]`, `total_count`, `has_more` |
+| `get_plenary_agenda` | `assembly`, `session` | `agenda_items[]`, `total_count`, `has_more` |
 
 > **BILL_ID vs BILL_NO** — many tools need `BILL_ID` (the internal ID, starts with `PRC_...`),
 > not `BILL_NO` (the public 7-digit number like `2216983`). Both are returned by `search_bills`
@@ -379,6 +379,13 @@ ASSEMBLY_API_KEY=your-key uv run python -m data_go_mcp.open_assembly.server
 ---
 
 ## Changelog
+
+### v0.3.0 (2026-03)
+- **Breaking**: renamed `age` parameter to `assembly` across all tools for clarity
+- Added client-side date filtering to `search_bills` (`propose_dt_from`/`propose_dt_to`)
+- Fixed `get_member_info` to use ALLNAMEMBER endpoint for correct per-assembly data (party, district, committee)
+- Fixed `_parse_response` to handle alternate INFO-200 response format
+- Removed broken date filter params from API calls (API ignores them)
 
 ### v0.2.7 (2026-03)
 - Replaced all placeholder examples ("홍길동", "김OO", etc.) in README with real API query results
