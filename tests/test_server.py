@@ -31,7 +31,7 @@ class TestSearchBillsTool:
         mock_client = _make_mock_client(sample_rows, "search_bills", total=42)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await search_bills(age="22", bill_name="테스트")
+            result = await search_bills(assembly="22", bill_name="테스트")
 
         assert result["count"] == 1
         assert result["total_count"] == 42
@@ -48,7 +48,7 @@ class TestSearchBillsTool:
         mock_client = _make_mock_client(sample_rows, "search_bills", total=1)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await search_bills(age="22")
+            result = await search_bills(assembly="22")
 
         assert result["has_more"] is False
 
@@ -59,7 +59,7 @@ class TestSearchBillsTool:
         mock_client = _make_mock_client([], "search_bills", total=0)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await search_bills(age="22", bill_name="존재하지않음")
+            result = await search_bills(assembly="22", bill_name="존재하지않음")
 
         assert result["count"] == 0
         assert result["total_count"] == 0
@@ -76,10 +76,28 @@ class TestSearchBillsTool:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await search_bills(age="22")
+            result = await search_bills(assembly="22")
 
         assert "error" in result
         assert result["bills"] == []
+
+    @pytest.mark.asyncio
+    async def test_date_filter_passed_to_client(self):
+        from data_go_mcp.open_assembly.server import search_bills
+
+        sample_rows = [
+            {"BILL_NO": "2200001", "BILL_NAME": "테스트", "PROPOSE_DT": "2025-06-15"},
+        ]
+        mock_client = _make_mock_client(sample_rows, "search_bills", total=1)
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            result = await search_bills(
+                assembly="22", propose_dt_from="2025-01-01", propose_dt_to="2025-12-31"
+            )
+
+        call_kwargs = mock_client.search_bills.call_args.kwargs
+        assert call_kwargs["propose_dt_from"] == "2025-01-01"
+        assert call_kwargs["propose_dt_to"] == "2025-12-31"
 
 
 class TestGetBillDetailTool:
@@ -116,33 +134,33 @@ class TestGetMemberInfoTool:
         mock_client = _make_mock_client(sample_rows, "get_member_info", total=5)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await get_member_info(age="22", name="홍길동")
+            result = await get_member_info(assembly="22", name="홍길동")
 
         assert result["count"] == 1
         assert result["total_count"] == 5
         assert result["members"][0]["HG_NM"] == "홍길동"
 
     @pytest.mark.asyncio
-    async def test_age_passed_to_client(self):
+    async def test_assembly_passed_to_client(self):
         """age가 client.get_member_info에 올바르게 전달되는지 확인."""
         from data_go_mcp.open_assembly.server import get_member_info
 
         mock_client = _make_mock_client([], "get_member_info")
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            await get_member_info(age="22")
+            await get_member_info(assembly="22")
 
         assert mock_client.get_member_info.call_args.kwargs["age"] == "22"
 
     @pytest.mark.asyncio
-    async def test_age_16_passed_to_client(self):
+    async def test_assembly_16_passed_to_client(self):
         """16대 age가 올바르게 전달되는지 확인."""
         from data_go_mcp.open_assembly.server import get_member_info
 
         mock_client = _make_mock_client([], "get_member_info")
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            await get_member_info(age="16")
+            await get_member_info(assembly="16")
 
         assert mock_client.get_member_info.call_args.kwargs["age"] == "16"
 
@@ -190,7 +208,7 @@ class TestGetCommitteeMembersTool:
         mock_client = _make_mock_client(sample_rows, "get_committee_members", total=18)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await get_committee_members(age="22", committee="법제사법위원회")
+            result = await get_committee_members(assembly="22", committee="법제사법위원회")
 
         assert result["count"] == 1
         assert result["total_count"] == 18
@@ -216,7 +234,7 @@ class TestGetVoteResultsTool:
         mock_client = _make_mock_client(sample_rows, "get_vote_results", total=150)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await get_vote_results(age="22")
+            result = await get_vote_results(assembly="22")
 
         assert result["count"] == 1
         assert result["total_count"] == 150
@@ -235,7 +253,7 @@ class TestGetMemberVotesTool:
         mock_client = _make_mock_client(sample_rows, "get_member_votes", total=295)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await get_member_votes(bill_id="PRC_T2M6W0F2I1W2T1X7T4K2Q5A9J4P2M5", age="22")
+            result = await get_member_votes(bill_id="PRC_T2M6W0F2I1W2T1X7T4K2Q5A9J4P2M5", assembly="22")
 
         assert result["count"] == 2
         assert result["total_count"] == 295
@@ -250,7 +268,7 @@ class TestGetMemberVotesTool:
         mock_client = _make_mock_client([], "get_member_votes", total=0)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            await get_member_votes(bill_id="PRC_TEST123", age="22")
+            await get_member_votes(bill_id="PRC_TEST123", assembly="22")
 
         call_kwargs = mock_client.get_member_votes.call_args.kwargs
         assert call_kwargs["bill_id"] == "PRC_TEST123"
@@ -264,7 +282,7 @@ class TestGetMemberVotesTool:
         mock_client = _make_mock_client([], "get_member_votes", total=0)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            await get_member_votes(bill_id="PRC_TEST", age="22", vote_result="찬성", party="더불어민주당")
+            await get_member_votes(bill_id="PRC_TEST", assembly="22", vote_result="찬성", party="더불어민주당")
 
         call_kwargs = mock_client.get_member_votes.call_args.kwargs
         assert call_kwargs["vote_result"] == "찬성"
@@ -282,7 +300,7 @@ class TestGetBillReviewTool:
         mock_client = _make_mock_client(sample_rows, "get_bill_review", total=3)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await get_bill_review(age="22", bill_no="2200001")
+            result = await get_bill_review(assembly="22", bill_no="2200001")
 
         assert result["count"] == 1
         assert result["total_count"] == 3
@@ -300,7 +318,7 @@ class TestGetPendingBillsTool:
         mock_client = _make_mock_client(sample_rows, "get_pending_bills", total=8900)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await get_pending_bills(age="22")
+            result = await get_pending_bills(assembly="22")
 
         assert result["count"] == 1
         assert result["total_count"] == 8900
@@ -315,7 +333,7 @@ class TestGetPendingBillsTool:
         mock_client = _make_mock_client([], "get_pending_bills", total=0)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            await get_pending_bills(age="22", committee="법제사법위원회", proposer="홍길동")
+            await get_pending_bills(assembly="22", committee="법제사법위원회", proposer="홍길동")
 
         call_kwargs = mock_client.get_pending_bills.call_args.kwargs
         assert call_kwargs["committee"] == "법제사법위원회"
@@ -333,7 +351,7 @@ class TestGetPlenaryAgendaTool:
         mock_client = _make_mock_client(sample_rows, "get_plenary_agenda", total=3)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await get_plenary_agenda(age="22")
+            result = await get_plenary_agenda(assembly="22")
 
         assert result["count"] == 1
         assert result["total_count"] == 3
@@ -347,7 +365,7 @@ class TestGetPlenaryAgendaTool:
         mock_client = _make_mock_client([], "get_plenary_agenda", total=0)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            await get_plenary_agenda(age="22", session="2")
+            await get_plenary_agenda(assembly="22", session="2")
 
         assert mock_client.get_plenary_agenda.call_args.kwargs["session"] == "2"
 
@@ -404,7 +422,7 @@ class TestGetBillSummaryTool:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await get_bill_summary(age="22", bill_no="2216983")
+            result = await get_bill_summary(assembly="22", bill_no="2216983")
 
         assert result["bill_no"] == "2216983"
         assert result["detail"]["BILL_NO"] == "2216983"
@@ -430,7 +448,7 @@ class TestGetBillSummaryTool:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await get_bill_summary(age="22", bill_no="9999999")
+            result = await get_bill_summary(assembly="22", bill_no="9999999")
 
         assert "detail" in result["errors"]
         assert result["detail"] is None
@@ -448,7 +466,7 @@ class TestGetBillSummaryTool:
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await get_bill_summary(age="22", bill_no="0000000")
+            result = await get_bill_summary(assembly="22", bill_no="0000000")
 
         # proposers and committee_meetings calls should not have been made
         mock_client.get_bill_proposers.assert_not_called()

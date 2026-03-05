@@ -38,11 +38,13 @@ def _unit_cd(age: str) -> str:
 
 @mcp.tool()
 async def search_bills(
-    age: str,
+    assembly: str,
     bill_name: Optional[str] = None,
     proposer: Optional[str] = None,
     proc_result: Optional[str] = None,
     committee: Optional[str] = None,
+    propose_dt_from: Optional[str] = None,
+    propose_dt_to: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
 ) -> dict[str, Any]:
@@ -60,19 +62,23 @@ async def search_bills(
     Typical workflow:
       1. search_bills -> get list of bills with both BILL_NO and BILL_ID
       2. get_bill_proposers(bill_id=BILL_ID) -> co-sponsors
-      3. get_member_votes(bill_id=BILL_ID, age=age) -> per-member vote records
-      4. get_bill_review(age=age, bill_no=BILL_NO) -> committee/plenary timeline
+      3. get_member_votes(bill_id=BILL_ID, assembly=assembly) -> per-member vote records
+      4. get_bill_review(assembly=assembly, bill_no=BILL_NO) -> committee/plenary timeline
 
     Note: covers member-initiated bills only. Does not include government-submitted bills.
-    Note: the underlying API does NOT support date range filtering. Use bill_name,
-    proposer, committee, or proc_result filters instead.
+    Date filtering (propose_dt_from/propose_dt_to) is applied client-side because the
+    underlying API does not support it natively. When date filters are used with other
+    filters (bill_name, committee, etc.), performance is good. Date-only queries on a
+    full assembly may be slow (scans up to 2,000 results).
 
     Args:
-        age: 대수 -- 필수 (예: "22" = 22대 국회, "16"-"22" 지원)
+        assembly: 대수 -- 필수 (예: "22" = 22대 국회, "16"-"22" 지원)
         bill_name: 법률안명 키워드 (선택, 예: "인공지능", "주거")
         proposer: 대표발의자명 (선택, 예: "홍길동")
         proc_result: 처리결과 필터 (선택) -- "원안가결" | "수정가결" | "부결" | "폐기"
         committee: 소관위원회명 (선택, 예: "법제사법위원회")
+        propose_dt_from: 발의일 시작 (선택, 예: "2025-01-01") -- 클라이언트 사이드 필터링
+        propose_dt_to: 발의일 종료 (선택, 예: "2025-12-31") -- 클라이언트 사이드 필터링
         page: 페이지 번호 (기본값: 1)
         page_size: 페이지당 결과수 (기본값: 10, 최대: 100)
 
@@ -86,11 +92,13 @@ async def search_bills(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.search_bills(
-                age=age,
+                age=assembly,
                 bill_name=bill_name,
                 proposer=proposer,
                 proc_result=proc_result,
                 committee=committee,
+                propose_dt_from=propose_dt_from,
+                propose_dt_to=propose_dt_to,
                 page=page,
                 page_size=page_size,
             )
@@ -148,7 +156,7 @@ async def get_bill_detail(bill_no: str) -> dict[str, Any]:
 
 @mcp.tool()
 async def get_member_info(
-    age: str = "22",
+    assembly: str = "22",
     name: Optional[str] = None,
     party: Optional[str] = None,
     district: Optional[str] = None,
@@ -171,7 +179,7 @@ async def get_member_info(
     For committee rosters specifically, get_committee_members is more direct.
 
     Args:
-        age: 대수 (기본값: "22", "16"-"22" 지원)
+        assembly: 대수 (기본값: "22", "16"-"22" 지원)
         name: 의원 한글명 (선택, 예: "홍길동")
         party: 정당명 (선택, 예: "더불어민주당", "국민의힘")
         district: 선거구명 (선택, 예: "서울 강남갑", "비례대표")
@@ -190,7 +198,7 @@ async def get_member_info(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_member_info(
-                age=age,
+                age=assembly,
                 name=name,
                 party=party,
                 district=district,
@@ -217,7 +225,7 @@ async def get_member_info(
 
 @mcp.tool()
 async def get_vote_results(
-    age: str,
+    assembly: str,
     bill_no: Optional[str] = None,
     bill_name: Optional[str] = None,
     page: int = 1,
@@ -230,7 +238,7 @@ async def get_vote_results(
     This is STEP 1 of the per-member vote analysis workflow.
 
     Typical vote analysis workflow:
-      1. get_vote_results(age=age, bill_name=...) → find the bill, note its BILL_ID
+      1. get_vote_results(age=assembly, bill_name=...) → find the bill, note its BILL_ID
       2. get_member_votes(bill_id=BILL_ID, age=age) → get per-member votes
       3. Filter votes by party, or compare party breakdowns
 
@@ -238,7 +246,7 @@ async def get_vote_results(
       • For individual member votes → use get_member_votes (requires BILL_ID from this tool)
 
     Args:
-        age: 대수 (예: "22") — 필수
+        assembly: 대수 (예: "22") — 필수
         bill_no: 의안번호로 필터 (선택, 예: "2216983") — BILL_NO(숫자), BILL_ID 아님
         bill_name: 의안명 키워드로 필터 (선택, 예: "국민투표법")
         page: 페이지 번호 (기본값: 1)
@@ -256,7 +264,7 @@ async def get_vote_results(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_vote_results(
-                age=age,
+                age=assembly,
                 bill_no=bill_no,
                 bill_name=bill_name,
                 page=page,
@@ -281,7 +289,7 @@ async def get_vote_results(
 
 @mcp.tool()
 async def get_bill_review(
-    age: str,
+    assembly: str,
     bill_no: Optional[str] = None,
     committee: Optional[str] = None,
     page: int = 1,
@@ -303,7 +311,7 @@ async def get_bill_review(
       • To filter bills by committee and see their processing status.
 
     Args:
-        age: 대수 (예: "22") — 필수
+        assembly: 대수 (예: "22") — 필수
         bill_no: 의안번호로 필터 (선택, 예: "2216983") — BILL_NO(숫자), BILL_ID 아님
         committee: 위원회명으로 필터 (선택, 예: "법제사법위원회")
         page: 페이지 번호 (기본값: 1)
@@ -320,7 +328,7 @@ async def get_bill_review(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_bill_review(
-                age=age,
+                age=assembly,
                 bill_no=bill_no,
                 committee=committee,
                 page=page,
@@ -385,7 +393,7 @@ async def get_bill_proposers(bill_id: str) -> dict[str, Any]:
 @mcp.tool()
 async def get_member_votes(
     bill_id: str,
-    age: str,
+    assembly: str,
     member_name: Optional[str] = None,
     party: Optional[str] = None,
     vote_result: Optional[str] = None,
@@ -399,7 +407,7 @@ async def get_member_votes(
     This is STEP 2 of the per-member vote analysis workflow.
 
     Typical workflow:
-      1. get_vote_results(age=age, bill_name=...) → find BILL_ID
+      1. get_vote_results(age=assembly, bill_name=...) → find BILL_ID
       2. get_member_votes(bill_id=BILL_ID, age=age) → all ~300 member votes
       3. Filter by party="더불어민주당" etc. to analyze party discipline
 
@@ -413,7 +421,7 @@ async def get_member_votes(
 
     Args:
         bill_id: 의안ID — 필수 (get_vote_results 결과의 BILL_ID 필드)
-        age: 대수 — 필수 (예: "22")
+        assembly: 대수 — 필수 (예: "22")
         member_name: 의원명 필터 (선택, 예: "홍길동") — 특정 의원 표결만 조회할 때 사용
         party: 정당명 필터 (선택, 예: "더불어민주당") — 정당 기율 분석에 사용
         vote_result: 표결결과 필터 (선택) — "찬성" | "반대" | "기권"
@@ -431,7 +439,7 @@ async def get_member_votes(
         try:
             rows, total = await client.get_member_votes(
                 bill_id=bill_id,
-                age=age,
+                age=assembly,
                 member_name=member_name,
                 party=party,
                 vote_result=vote_result,
@@ -457,7 +465,7 @@ async def get_member_votes(
 
 @mcp.tool()
 async def get_committee_members(
-    age: str = "22",
+    assembly: str = "22",
     committee: Optional[str] = None,
     page: int = 1,
     page_size: int = 50,
@@ -473,7 +481,7 @@ async def get_committee_members(
       • More direct than get_member_info(committee=...) for committee rosters.
 
     Args:
-        age: 대수 (기본값: "22", "16"–"22" 지원)
+        assembly: 대수 (기본값: "22", "16"–"22" 지원)
         committee: 위원회명 (선택, 예: "법제사법위원회", "과학기술정보방송통신위원회")
                    None이면 전체 의원 조회 (get_member_info와 동일)
         page: 페이지 번호 (기본값: 1)
@@ -489,7 +497,7 @@ async def get_committee_members(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_committee_members(
-                unit_cd=_unit_cd(age),
+                unit_cd=_unit_cd(assembly),
                 committee=committee,
                 page=page,
                 page_size=page_size,
@@ -513,7 +521,7 @@ async def get_committee_members(
 
 @mcp.tool()
 async def get_pending_bills(
-    age: str,
+    assembly: str,
     bill_name: Optional[str] = None,
     committee: Optional[str] = None,
     proposer: Optional[str] = None,
@@ -532,7 +540,7 @@ async def get_pending_bills(
       • Complements search_bills (which covers all outcomes including past bills).
 
     Args:
-        age: 대수 (예: "22") — 필수
+        assembly: 대수 (예: "22") — 필수
         bill_name: 법률안명 키워드로 필터 (선택)
         committee: 소관위원회명으로 필터 (선택, 예: "환경노동위원회")
         proposer: 대표발의자명으로 필터 (선택)
@@ -549,7 +557,7 @@ async def get_pending_bills(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_pending_bills(
-                age=age,
+                age=assembly,
                 bill_name=bill_name,
                 committee=committee,
                 proposer=proposer,
@@ -575,7 +583,7 @@ async def get_pending_bills(
 
 @mcp.tool()
 async def get_plenary_agenda(
-    age: str,
+    assembly: str,
     session: Optional[str] = None,
     page: int = 1,
     page_size: int = 20,
@@ -591,7 +599,7 @@ async def get_plenary_agenda(
         plenary agenda bills are ready for the floor vote.
 
     Args:
-        age: 대수 (예: "22") — 필수
+        assembly: 대수 (예: "22") — 필수
         session: 회기 번호로 필터 (선택, 예: "1" = 제1회기)
         page: 페이지 번호 (기본값: 1)
         page_size: 페이지당 결과수 (기본값: 20)
@@ -606,7 +614,7 @@ async def get_plenary_agenda(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_plenary_agenda(
-                age=age,
+                age=assembly,
                 session=session,
                 page=page,
                 page_size=page_size,
@@ -676,7 +684,7 @@ async def get_bill_committee_review(bill_id: str) -> dict[str, Any]:
 
 
 @mcp.tool()
-async def get_bill_summary(age: str, bill_no: str) -> dict[str, Any]:
+async def get_bill_summary(assembly: str, bill_no: str) -> dict[str, Any]:
     """
     단일 의안의 핵심 정보를 한 번에 조회합니다 (편의 도구).
 
@@ -691,7 +699,7 @@ async def get_bill_summary(age: str, bill_no: str) -> dict[str, Any]:
     will be missing from the result with an error note.
 
     Args:
-        age: 대수 (예: "22") — 필수
+        assembly: 대수 (예: "22") — 필수
         bill_no: 의안번호 (예: "2216983") — 필수.
                  search_bills / get_pending_bills 결과의 BILL_NO(숫자) 필드 사용.
 
@@ -708,7 +716,7 @@ async def get_bill_summary(age: str, bill_no: str) -> dict[str, Any]:
 
         # Fetch detail and review in parallel
         detail_task = client.get_bill_detail(bill_no=bill_no)
-        review_task = client.get_bill_review(age=age, bill_no=bill_no, page_size=1)
+        review_task = client.get_bill_review(age=assembly, bill_no=bill_no, page_size=1)
         detail_result, review_result = await asyncio.gather(
             detail_task, review_task, return_exceptions=True
         )

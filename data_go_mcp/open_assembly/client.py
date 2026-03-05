@@ -113,6 +113,8 @@ class AssemblyAPIClient:
         proposer: Optional[str] = None,
         proc_result: Optional[str] = None,
         committee: Optional[str] = None,
+        propose_dt_from: Optional[str] = None,
+        propose_dt_to: Optional[str] = None,
         page: int = 1,
         page_size: int = 10,
     ) -> tuple[list[dict], int]:
@@ -120,17 +122,50 @@ class AssemblyAPIClient:
 
         NOTE: This endpoint uses "COMMITTEE" (not "COMMITTEE_NM") for committee filter.
         get_bill_review uses "COMMITTEE_NM" -- this is an API-level inconsistency.
-        NOTE: The API does NOT support date range filtering (STR_DT/END_DT are ignored).
+        NOTE: The API does NOT support date range filtering natively. When
+        propose_dt_from/propose_dt_to are provided, results are fetched in bulk
+        and filtered client-side (scans up to 2,000 results).
         """
-        return await self._get(EP_BILLS, {
-            "AGE": age,
-            "BILL_NAME": bill_name,
-            "PROPOSER": proposer,
-            "PROC_RESULT": proc_result,
-            "COMMITTEE": committee,
-            "pIndex": page,
-            "pSize": page_size,
-        })
+        if not propose_dt_from and not propose_dt_to:
+            return await self._get(EP_BILLS, {
+                "AGE": age,
+                "BILL_NAME": bill_name,
+                "PROPOSER": proposer,
+                "PROC_RESULT": proc_result,
+                "COMMITTEE": committee,
+                "pIndex": page,
+                "pSize": page_size,
+            })
+
+        # Client-side date filtering -- API ignores date params
+        all_rows: list[dict] = []
+        p = 1
+        while p <= 20:
+            rows, total = await self._get(EP_BILLS, {
+                "AGE": age,
+                "BILL_NAME": bill_name,
+                "PROPOSER": proposer,
+                "PROC_RESULT": proc_result,
+                "COMMITTEE": committee,
+                "pIndex": p,
+                "pSize": 100,
+            })
+            if not rows:
+                break
+            all_rows.extend(rows)
+            if len(all_rows) >= total:
+                break
+            p += 1
+
+        if propose_dt_from:
+            all_rows = [r for r in all_rows if (r.get("PROPOSE_DT") or "") >= propose_dt_from]
+        if propose_dt_to:
+            all_rows = [r for r in all_rows if (r.get("PROPOSE_DT") or "") <= propose_dt_to]
+
+        total_filtered = len(all_rows)
+        start = (page - 1) * page_size
+        end = start + page_size
+        return all_rows[start:end], total_filtered
 
     async def get_bill_detail(self, bill_no: str) -> tuple[list[dict], int]:
         """의안 상세정보 조회 (의안정보 통합 API)."""
