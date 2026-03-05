@@ -43,8 +43,6 @@ async def search_bills(
     proposer: Optional[str] = None,
     proc_result: Optional[str] = None,
     committee: Optional[str] = None,
-    propose_dt_from: Optional[str] = None,
-    propose_dt_to: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
 ) -> dict[str, Any]:
@@ -54,32 +52,32 @@ async def search_bills(
     Search for member-sponsored bills in the National Assembly.
     This is the PRIMARY entry point for most bill-related queries.
 
-    IMPORTANT — two bill identifiers are returned:
-      • BILL_NO: 7-digit public number (e.g., "2216983") — use with get_bill_detail, get_bill_review
-      • BILL_ID: internal ID starting with "PRC_..." — use with get_bill_proposers,
+    IMPORTANT -- two bill identifiers are returned:
+      - BILL_NO: 7-digit public number (e.g., "2216983") -- use with get_bill_detail, get_bill_review
+      - BILL_ID: internal ID starting with "PRC_..." -- use with get_bill_proposers,
         get_member_votes, get_bill_committee_review
 
     Typical workflow:
-      1. search_bills → get list of bills with both BILL_NO and BILL_ID
-      2. get_bill_proposers(bill_id=BILL_ID) → co-sponsors
-      3. get_member_votes(bill_id=BILL_ID, age=age) → per-member vote records
-      4. get_bill_review(age=age, bill_no=BILL_NO) → committee/plenary timeline
+      1. search_bills -> get list of bills with both BILL_NO and BILL_ID
+      2. get_bill_proposers(bill_id=BILL_ID) -> co-sponsors
+      3. get_member_votes(bill_id=BILL_ID, age=age) -> per-member vote records
+      4. get_bill_review(age=age, bill_no=BILL_NO) -> committee/plenary timeline
 
     Note: covers member-initiated bills only. Does not include government-submitted bills.
+    Note: the underlying API does NOT support date range filtering. Use bill_name,
+    proposer, committee, or proc_result filters instead.
 
     Args:
-        age: 대수 — 필수 (예: "22" = 22대 국회, "16"–"22" 지원)
+        age: 대수 -- 필수 (예: "22" = 22대 국회, "16"-"22" 지원)
         bill_name: 법률안명 키워드 (선택, 예: "인공지능", "주거")
         proposer: 대표발의자명 (선택, 예: "홍길동")
-        proc_result: 처리결과 필터 (선택) — "원안가결" | "수정가결" | "부결" | "폐기"
+        proc_result: 처리결과 필터 (선택) -- "원안가결" | "수정가결" | "부결" | "폐기"
         committee: 소관위원회명 (선택, 예: "법제사법위원회")
-        propose_dt_from: 발의일 시작 (선택, YYYYMMDD 형식, 예: "20240101")
-        propose_dt_to: 발의일 종료 (선택, YYYYMMDD 형식, 예: "20241231")
         page: 페이지 번호 (기본값: 1)
         page_size: 페이지당 결과수 (기본값: 10, 최대: 100)
 
     Returns:
-        bills: 법률안 목록 — 각 항목에 BILL_ID, BILL_NO, BILL_NAME, RST_PROPOSER,
+        bills: 법률안 목록 -- 각 항목에 BILL_ID, BILL_NO, BILL_NAME, RST_PROPOSER,
                PROPOSE_DT, PROC_RESULT, COMMITTEE, DETAIL_LINK 포함
         count: 이번 페이지 반환 건수
         total_count: 검색 조건 전체 건수
@@ -93,8 +91,6 @@ async def search_bills(
                 proposer=proposer,
                 proc_result=proc_result,
                 committee=committee,
-                propose_dt_from=propose_dt_from,
-                propose_dt_to=propose_dt_to,
                 page=page,
                 page_size=page_size,
             )
@@ -164,17 +160,19 @@ async def get_member_info(
     국회의원 정보를 조회합니다.
 
     Query National Assembly member information: party, district, committee, contact, photo.
+    Uses the ALLNAMEMBER endpoint to provide correct per-assembly data for all assemblies
+    (16th-22nd). Party and district reflect each MP's actual affiliation during that assembly.
 
     When to use:
-      • To look up a member's party, district, or committee affiliation.
-      • To list all members of a party (use party filter, page through results).
-      • To verify the exact name spelling before using as a filter in search_bills.
+      - To look up a member's party, district, or committee affiliation.
+      - To list all members of a party (use party filter, page through results).
+      - To verify the exact name spelling before using as a filter in search_bills.
 
     For committee rosters specifically, get_committee_members is more direct.
 
     Args:
-        age: 대수 (기본값: "22", "16"–"22" 지원)
-        name: 의원 한글명 (선택, 예: "홍길동") — 정확한 이름이어야 합니다
+        age: 대수 (기본값: "22", "16"-"22" 지원)
+        name: 의원 한글명 (선택, 예: "홍길동")
         party: 정당명 (선택, 예: "더불어민주당", "국민의힘")
         district: 선거구명 (선택, 예: "서울 강남갑", "비례대표")
         committee: 소속위원회명 (선택, 예: "법제사법위원회")
@@ -182,9 +180,9 @@ async def get_member_info(
         page_size: 페이지당 결과수 (기본값: 10)
 
     Returns:
-        members: 의원 목록 — HG_NM(이름), POLY_NM(정당), ORIG_NM(선거구),
+        members: 의원 목록 -- HG_NM(이름), POLY_NM(정당), ORIG_NM(선거구),
                  CMIT_NM(위원회), REELE_GBN_NM(선수), SEX_GBN_NM(성별),
-                 TEL_NO, E_MAIL, HOMEPAGE, NAAS_PIC(사진URL) 등
+                 E_MAIL, HOMEPAGE, NAAS_PIC(사진URL) 등
         count: 이번 페이지 반환 건수
         total_count: 전체 건수
         has_more: True이면 page+1로 재호출
@@ -192,7 +190,7 @@ async def get_member_info(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_member_info(
-                unit_cd=_unit_cd(age),
+                age=age,
                 name=name,
                 party=party,
                 district=district,

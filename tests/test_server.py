@@ -81,19 +81,6 @@ class TestSearchBillsTool:
         assert "error" in result
         assert result["bills"] == []
 
-    @pytest.mark.asyncio
-    async def test_date_filter_params_passed_to_client(self):
-        from data_go_mcp.open_assembly.server import search_bills
-
-        mock_client = _make_mock_client([], "search_bills", total=0)
-
-        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            await search_bills(age="22", propose_dt_from="20240101", propose_dt_to="20241231")
-
-        call_kwargs = mock_client.search_bills.call_args.kwargs
-        assert call_kwargs["propose_dt_from"] == "20240101"
-        assert call_kwargs["propose_dt_to"] == "20241231"
-
 
 class TestGetBillDetailTool:
     @pytest.mark.asyncio
@@ -136,7 +123,8 @@ class TestGetMemberInfoTool:
         assert result["members"][0]["HG_NM"] == "홍길동"
 
     @pytest.mark.asyncio
-    async def test_unit_cd_mapping_22(self):
+    async def test_age_passed_to_client(self):
+        """age가 client.get_member_info에 올바르게 전달되는지 확인."""
         from data_go_mcp.open_assembly.server import get_member_info
 
         mock_client = _make_mock_client([], "get_member_info")
@@ -144,11 +132,11 @@ class TestGetMemberInfoTool:
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
             await get_member_info(age="22")
 
-        assert mock_client.get_member_info.call_args.kwargs["unit_cd"] == "100022"
+        assert mock_client.get_member_info.call_args.kwargs["age"] == "22"
 
     @pytest.mark.asyncio
-    async def test_unit_cd_mapping_16(self):
-        """16대 UNIT_CD가 올바르게 변환되는지 확인."""
+    async def test_age_16_passed_to_client(self):
+        """16대 age가 올바르게 전달되는지 확인."""
         from data_go_mcp.open_assembly.server import get_member_info
 
         mock_client = _make_mock_client([], "get_member_info")
@@ -156,7 +144,7 @@ class TestGetMemberInfoTool:
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
             await get_member_info(age="16")
 
-        assert mock_client.get_member_info.call_args.kwargs["unit_cd"] == "100016"
+        assert mock_client.get_member_info.call_args.kwargs["age"] == "16"
 
 
 class TestGetBillProposersTool:

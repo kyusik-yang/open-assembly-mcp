@@ -14,16 +14,19 @@ BASE_URL = "https://open.assembly.go.kr/portal/openapi"
 EP_BILLS = "nzmimeepazxkubdpn"              # 국회의원 발의법률안
 EP_BILL_DETAIL = "ALLBILL"                  # 의안정보 통합 API
 EP_BILL_REVIEW = "nwbpacrgavhjryiph"        # 의안 처리·심사정보
-EP_MEMBER = "nwvrqwxyaytdsfvhu"             # 국회의원 정보 통합 API
+EP_MEMBER = "nwvrqwxyaytdsfvhu"             # 국회의원 정보 통합 API (current assembly only!)
+EP_ALLNAME = "ALLNAMEMBER"                  # 역대 국회의원 정보 (all assemblies, correct data)
 EP_VOTE = "ncocpgfiaoituanbr"               # 의안별 표결현황
 EP_BILL_PROPOSERS = "BILLINFOPPSR"          # 의안 제안자정보 (requires BILL_ID)
 EP_MEMBER_VOTES = "nojepdqqaweusdfbi"       # 국회의원 본회의 표결정보 (requires BILL_ID + AGE)
 EP_PENDING_BILLS = "nwbqublzajtcqpdae"      # 계류의안 (미처리 현안 목록)
 EP_PLENARY_AGENDA = "nayjnliqaexiioauy"     # 본회의부의안건 (다음 본회의 상정 예정 안건)
 EP_COMMITTEE_REVIEW_MTG = "BILLJUDGECONF"  # 위원회 심사 회의정보 (requires BILL_ID)
-# EP_COMMITTEE_MEMBERS reuses EP_MEMBER with CMIT_NM filter
 
 # Not available as Open API (only file data): 회의록, 청원, 법률안 제안이유
+
+# Assembly age label for ALLNAMEMBER (e.g., "22" -> "제22대")
+_AGE_LABEL = {str(i): f"제{i}대" for i in range(1, 30)}
 
 
 class AssemblyAPIClient:
@@ -53,6 +56,15 @@ class AssemblyAPIClient:
         Returns:
             (rows, total_count): 결과 행 목록과 총 건수.
         """
+        # Some endpoints return {"RESULT": {"CODE": "INFO-200", ...}} when no data,
+        # instead of the normal {"endpoint_name": [{head}, {row}]} structure.
+        if "RESULT" in data and endpoint not in data:
+            code = data["RESULT"].get("CODE", "")
+            if code == "INFO-200":
+                return [], 0
+            msg = data["RESULT"].get("MESSAGE", "Unknown API error")
+            raise ValueError(f"API error {code}: {msg}")
+
         body = data.get(endpoint, [])
         if not body:
             raise ValueError(f"Unexpected response structure for endpoint '{endpoint}'")
@@ -101,15 +113,14 @@ class AssemblyAPIClient:
         proposer: Optional[str] = None,
         proc_result: Optional[str] = None,
         committee: Optional[str] = None,
-        propose_dt_from: Optional[str] = None,
-        propose_dt_to: Optional[str] = None,
         page: int = 1,
         page_size: int = 10,
     ) -> tuple[list[dict], int]:
         """국회의원 발의법률안 목록 조회.
 
         NOTE: This endpoint uses "COMMITTEE" (not "COMMITTEE_NM") for committee filter.
-        get_bill_review uses "COMMITTEE_NM" — this is an API-level inconsistency.
+        get_bill_review uses "COMMITTEE_NM" -- this is an API-level inconsistency.
+        NOTE: The API does NOT support date range filtering (STR_DT/END_DT are ignored).
         """
         return await self._get(EP_BILLS, {
             "AGE": age,
@@ -117,8 +128,6 @@ class AssemblyAPIClient:
             "PROPOSER": proposer,
             "PROC_RESULT": proc_result,
             "COMMITTEE": committee,
-            "STR_DT": propose_dt_from,
-            "END_DT": propose_dt_to,
             "pIndex": page,
             "pSize": page_size,
         })
@@ -127,9 +136,57 @@ class AssemblyAPIClient:
         """의안 상세정보 조회 (의안정보 통합 API)."""
         return await self._get(EP_BILL_DETAIL, {"BILL_NO": bill_no})
 
+    def _parse_allname_for_age(self, rows: list[dict], age: str) -> list[dict]:
+        """Parse ALLNAMEMBER rows and extract per-assembly data.
+
+        ALLNAMEMBER returns one row per MP with slash-separated fields for
+        multi-term members (e.g., party="새누리당/자유한국당" for 2 terms).
+        This method extracts the data for a specific assembly.
+        """
+        age_label = _AGE_LABEL.get(age, f"제{age}대")
+        slash_fields = {
+            "PLPT_NM": "POLY_NM",
+            "ELECD_NM": "ORIG_NM",
+            "ELECD_DIV_NM": "ELECT_GBN_NM",
+            "BLNG_CMIT_NM": "CMIT_NM",
+        }
+        result = []
+        for r in rows:
+            era_str = r.get("GTELT_ERACO") or ""
+            eras = [e.strip() for e in era_str.split(", ") if e.strip()]
+            if age_label not in eras:
+                continue
+            idx = eras.index(age_label)
+            n_eras = len(eras)
+
+            mapped: dict[str, Any] = {
+                "MONA_CD": r.get("NAAS_CD"),
+                "HG_NM": r.get("NAAS_NM"),
+                "HJ_NM": r.get("NAAS_CH_NM"),
+                "ENG_NM": r.get("NAAS_EN_NM"),
+                "SEX_GBN_NM": r.get("NTR_DIV"),
+                "BTH_DATE": r.get("BIRDY_DT"),
+                "REELE_GBN_NM": r.get("RLCT_DIV_NM"),
+                "E_MAIL": r.get("NAAS_EMAIL_ADDR"),
+                "HOMEPAGE": r.get("NAAS_HP_URL"),
+                "NAAS_PIC": r.get("NAAS_PIC"),
+            }
+            for src, dst in slash_fields.items():
+                val = r.get(src) or ""
+                parts = val.split("/")
+                if len(parts) == n_eras:
+                    mapped[dst] = parts[idx].strip()
+                elif len(parts) == 1:
+                    mapped[dst] = parts[0].strip()
+                else:
+                    mapped[dst] = parts[min(idx, len(parts) - 1)].strip() if parts else ""
+            result.append(mapped)
+        return result
+
     async def get_member_info(
         self,
         unit_cd: str = "100022",
+        age: Optional[str] = None,
         name: Optional[str] = None,
         party: Optional[str] = None,
         district: Optional[str] = None,
@@ -137,16 +194,47 @@ class AssemblyAPIClient:
         page: int = 1,
         page_size: int = 10,
     ) -> tuple[list[dict], int]:
-        """국회의원 정보 조회."""
-        return await self._get(EP_MEMBER, {
-            "UNIT_CD": unit_cd,
-            "HG_NM": name,
-            "POLY_NM": party,
-            "ORIG_NM": district,
-            "CMIT_NM": committee,
-            "pIndex": page,
-            "pSize": page_size,
-        })
+        """국회의원 정보 조회.
+
+        Uses ALLNAMEMBER endpoint to provide correct per-assembly data.
+        The EP_MEMBER endpoint (nwvrqwxyaytdsfvhu) ignores UNIT_CD and always
+        returns current-assembly data, which is incorrect for historical queries.
+        """
+        if age is None:
+            age = unit_cd.replace("100", "").lstrip("0") if unit_cd.startswith("100") else "22"
+
+        # If name is given, ALLNAMEMBER supports NAAS_NM filter (efficient)
+        params: dict[str, Any] = {"pIndex": 1, "pSize": 100}
+        if name:
+            params["NAAS_NM"] = name
+
+        all_rows: list[dict] = []
+        p = 1
+        while True:
+            params["pIndex"] = p
+            rows, total = await self._get(EP_ALLNAME, params)
+            if not rows:
+                break
+            all_rows.extend(rows)
+            if len(all_rows) >= total:
+                break
+            p += 1
+
+        # Parse and filter for the requested assembly
+        parsed = self._parse_allname_for_age(all_rows, age)
+
+        # Apply client-side filters
+        if party:
+            parsed = [r for r in parsed if party in (r.get("POLY_NM") or "")]
+        if district:
+            parsed = [r for r in parsed if district in (r.get("ORIG_NM") or "")]
+        if committee:
+            parsed = [r for r in parsed if committee in (r.get("CMIT_NM") or "")]
+
+        total_filtered = len(parsed)
+        start = (page - 1) * page_size
+        end = start + page_size
+        return parsed[start:end], total_filtered
 
     async def get_vote_results(
         self,
@@ -230,13 +318,14 @@ class AssemblyAPIClient:
         page: int = 1,
         page_size: int = 50,
     ) -> tuple[list[dict], int]:
-        """위원회 위원 명단 조회. 국회의원 정보 API(EP_MEMBER)에 위원회 필터 적용."""
-        return await self._get(EP_MEMBER, {
-            "UNIT_CD": unit_cd,
-            "CMIT_NM": committee,
-            "pIndex": page,
-            "pSize": page_size,
-        })
+        """위원회 위원 명단 조회. ALLNAMEMBER 기반으로 정확한 역대 데이터 제공."""
+        age = unit_cd.replace("100", "").lstrip("0") if unit_cd.startswith("100") else "22"
+        return await self.get_member_info(
+            age=age,
+            committee=committee,
+            page=page,
+            page_size=page_size,
+        )
 
     async def get_pending_bills(
         self,
