@@ -152,24 +152,41 @@ class TestSearchBills:
             assert total == 0
 
     @pytest.mark.asyncio
-    async def test_search_bills_date_params_passed(self, mock_env, sample_bill_response):
-        """발의일 날짜 필터 파라미터(STR_DT, END_DT)가 요청에 포함되는지 확인."""
+    async def test_search_bills_date_filter_client_side(self, mock_env):
+        """날짜 필터가 client-side에서 PROPOSE_DT 기준으로 동작하는지 확인."""
+        bulk_response = {
+            "nzmimeepazxkubdpn": [
+                {
+                    "head": [
+                        {"list_total_count": 3},
+                        {"RESULT": {"CODE": "INFO-000", "MESSAGE": "정상 처리되었습니다."}},
+                    ]
+                },
+                {
+                    "row": [
+                        {"BILL_NO": "2200001", "PROPOSE_DT": "20231215", "BILL_NAME": "before"},
+                        {"BILL_NO": "2200002", "PROPOSE_DT": "20240315", "BILL_NAME": "in-range"},
+                        {"BILL_NO": "2200003", "PROPOSE_DT": "20250101", "BILL_NAME": "after"},
+                    ]
+                },
+            ]
+        }
         with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
             mock_response = MagicMock()
-            mock_response.json.return_value = sample_bill_response
+            mock_response.json.return_value = bulk_response
             mock_response.raise_for_status = MagicMock()
             mock_get.return_value = mock_response
 
             async with AssemblyAPIClient() as client:
-                await client.search_bills(
+                rows, total = await client.search_bills(
                     age="22",
                     propose_dt_from="20240101",
                     propose_dt_to="20241231",
                 )
 
-            call_kwargs = mock_get.call_args[1]["params"]
-            assert call_kwargs["STR_DT"] == "20240101"
-            assert call_kwargs["END_DT"] == "20241231"
+            assert total == 1
+            assert len(rows) == 1
+            assert rows[0]["BILL_NO"] == "2200002"
 
 
 class TestGetMemberVotes:
@@ -411,7 +428,7 @@ class TestGetMemberInfo:
     @pytest.mark.asyncio
     async def test_get_member_info_calls_correct_endpoint(self, mock_env):
         member_response = {
-            "nwvrqwxyaytdsfvhu": [
+            "ALLNAMEMBER": [
                 {
                     "head": [
                         {"list_total_count": 1},
@@ -421,11 +438,18 @@ class TestGetMemberInfo:
                 {
                     "row": [
                         {
-                            "HG_NM": "홍길동",
-                            "POLY_NM": "더불어민주당",
-                            "ORIG_NM": "서울 강남갑",
-                            "CMIT_NM": "법제사법위원회",
-                            "MONA_CD": "A1B2C3D4",
+                            "NAAS_NM": "홍길동",
+                            "NAAS_CD": "A1B2C3D4",
+                            "NAAS_CH_NM": "洪吉東",
+                            "NAAS_EN_NM": "HONG Gildong",
+                            "NTR_DIV": "남",
+                            "BIRDY_DT": "19700101",
+                            "GTELT_ERACO": "제22대",
+                            "PLPT_NM": "더불어민주당",
+                            "ELECD_NM": "서울 강남갑",
+                            "ELECD_DIV_NM": "지역구",
+                            "BLNG_CMIT_NM": "법제사법위원회",
+                            "RLCT_DIV_NM": "초선",
                         }
                     ]
                 },
@@ -444,4 +468,4 @@ class TestGetMemberInfo:
             assert total == 1
             assert rows[0]["HG_NM"] == "홍길동"
             call_url = mock_get.call_args[0][0]
-            assert "nwvrqwxyaytdsfvhu" in call_url
+            assert "ALLNAMEMBER" in call_url
