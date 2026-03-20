@@ -314,8 +314,33 @@ All tools return `total_count` and `has_more` for transparent pagination.
 | `get_bill_committee_review` | 16th–22nd | Committee meetings for a specific bill |
 | `get_bill_summary` | 16th–22nd | **Convenience** — chains detail + review + proposers + committee meetings in one call |
 
-**Not available via Open API**: transcripts, citizen petitions, bill full text
-(use `get_bill_detail` → `LINK_URL` for the official bill page).
+**Not available via Open API**: transcripts, citizen petitions, bill full text.
+For bill texts and transcripts, see [Related Data Packages](#related-data-packages) below.
+For official bill pages, use `get_bill_detail` → `LINK_URL`.
+
+---
+
+## Related Data Packages
+
+This MCP server queries the [열린국회정보 API](https://open.assembly.go.kr) in real time. For data not available through the API, companion packages provide pre-collected datasets:
+
+| Package | Data | Scale | Install |
+|---------|------|-------|---------|
+| [**korean-assembly-bills**](https://github.com/kyusik-yang/korean-assembly-bills) | Bill propose-reason texts (제안이유), co-sponsor records, MP metadata | 60,925 bills (20th-22nd) | `pip install korean-assembly-bills` |
+| [**kr-hearings-data**](https://github.com/kyusik-yang/kr-hearings-data) | Committee proceeding speeches, legislator-witness Q&A dyads | 9.9M speeches, 7.9M dyads (16th-22nd) | `pip install kr-hearings-data` |
+| [**minister-data**](https://github.com/kyusik-yang/minister-data) | Cabinet minister panel with dual-office (겸직) coding | 286 appointments (2000-2025) | [CSV on GitHub](https://github.com/kyusik-yang/minister-data) |
+| [**assemblykor**](https://github.com/kyusik-yang/assemblykor) | Curated teaching datasets (bills, votes, wealth, speeches) | R package, 7 datasets | `remotes::install_github("kyusik-yang/assemblykor")` |
+
+**Choosing the right tool:**
+
+| You need... | Use |
+|-------------|-----|
+| Real-time bill metadata, vote tallies, member roster | **This MCP** (live API) |
+| Bill propose-reason text (제안이유) | [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) |
+| Committee hearing transcripts, speech-level data | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) |
+| Legislator-witness Q&A pairs for oversight research | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) dyads |
+| Cabinet minister dual-office status | [minister-data](https://github.com/kyusik-yang/minister-data) |
+| Teaching quantitative methods with Korean politics data | [assemblykor](https://github.com/kyusik-yang/assemblykor) (R) |
 
 ---
 
@@ -356,6 +381,9 @@ With MCP:    ask Claude in one sentence → tools chain automatically → result
 | Currently active legislation in a policy area | `get_pending_bills` (committee/keyword filter) |
 | Upcoming plenary votes | `get_plenary_agenda` |
 | Majority-building analysis for a passed bill | `get_bill_proposers` + `get_member_votes` |
+| Bill propose-reason text analysis | `search_bills` (this MCP) + [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) for texts |
+| Committee oversight speech patterns | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) speeches |
+| Confirmation hearing analysis | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) with hearing_type filter |
 
 ---
 
@@ -379,6 +407,11 @@ ASSEMBLY_API_KEY=your-key uv run python -m data_go_mcp.open_assembly.server
 ---
 
 ## Changelog
+
+### v0.3.1 (2026-03)
+- Added "Related Data Packages" section to README with cross-references to korean-assembly-bills, kr-hearings-data, minister-data, assemblykor
+- Updated tool docstrings (`get_bill_detail`, `search_bills`) to guide users to companion packages for bill texts and committee transcripts
+- Expanded research use cases table with companion package workflows
 
 ### v0.3.0 (2026-03)
 - **Breaking**: renamed `age` parameter to `assembly` across all tools for clarity

@@ -71,6 +71,9 @@ async def search_bills(
     filters (bill_name, committee, etc.), performance is good. Date-only queries on a
     full assembly may be slow (scans up to 2,000 results).
 
+    For bill propose-reason texts (제안이유), use the korean-assembly-bills package
+    (pip install korean-assembly-bills). 60,925 texts with 99.4% coverage (20th-22nd).
+
     Args:
         assembly: 대수 -- 필수 (예: "22" = 22대 국회, "16"-"22" 지원)
         bill_name: 법률안명 키워드 (선택, 예: "인공지능", "주거")
@@ -134,6 +137,10 @@ async def get_bill_detail(bill_no: str) -> dict[str, Any]:
     Not this tool:
       • For the committee/plenary processing TIMELINE → use get_bill_review
       • For CO-SPONSORS → use get_bill_proposers (requires BILL_ID, not BILL_NO)
+
+    Bill full text / propose-reason (제안이유):
+      The Open API does not return bill texts. Use the korean-assembly-bills package
+      (pip install korean-assembly-bills) for 60,925 bill texts (20th-22nd Assembly).
 
     Args:
         bill_no: 의안번호 (예: "2217175") — 필수.

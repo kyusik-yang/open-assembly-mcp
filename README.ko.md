@@ -313,8 +313,33 @@ Claude 호출:
 | `get_bill_committee_review` | 16~22대 | 특정 의안의 위원회 심사 회의정보 (BILL_ID 필요) |
 | `get_bill_summary` | 16~22대 | **편의 도구** — 상세정보+처리타임라인+공동발의자+위원회 회의를 한 번에 조회 |
 
-**Open API 미제공 항목**: 회의록, 청원, 법안 전문
-(`get_bill_detail` → `LINK_URL`에서 공식 의안 페이지 확인 가능).
+**Open API 미제공 항목**: 회의록, 청원, 법안 전문.
+법안 제안이유 텍스트와 위원회 회의록은 [관련 데이터 패키지](#관련-데이터-패키지) 참조.
+공식 의안 페이지는 `get_bill_detail` → `LINK_URL`로 확인 가능.
+
+---
+
+## 관련 데이터 패키지
+
+이 MCP 서버는 [열린국회정보 API](https://open.assembly.go.kr)를 실시간으로 조회합니다. API에서 제공하지 않는 데이터는 아래 companion 패키지에서 수집·제공합니다:
+
+| 패키지 | 데이터 | 규모 | 설치 |
+|--------|--------|------|------|
+| [**korean-assembly-bills**](https://github.com/kyusik-yang/korean-assembly-bills) | 법안 제안이유 텍스트, 공동발의자 기록, 의원 메타데이터 | 60,925건 (20~22대) | `pip install korean-assembly-bills` |
+| [**kr-hearings-data**](https://github.com/kyusik-yang/kr-hearings-data) | 위원회 회의 발언록, 의원-증인 Q&A dyad | 9.9M 발언, 7.9M dyad (16~22대) | `pip install kr-hearings-data` |
+| [**minister-data**](https://github.com/kyusik-yang/minister-data) | 국무위원 패널 데이터 + 겸직 코딩 | 286 임명 (2000~2025) | [GitHub CSV](https://github.com/kyusik-yang/minister-data) |
+| [**assemblykor**](https://github.com/kyusik-yang/assemblykor) | 교육용 데이터셋 (법안, 표결, 재산, 발언) | R 패키지, 7개 데이터셋 | `remotes::install_github("kyusik-yang/assemblykor")` |
+
+**용도별 선택 가이드:**
+
+| 필요한 데이터 | 사용 도구 |
+|---------------|-----------|
+| 실시간 법안 메타데이터, 표결 집계, 의원 명단 | **이 MCP** (live API) |
+| 법안 제안이유 텍스트 | [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) |
+| 위원회 회의록, 발언 단위 데이터 | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) |
+| 의원-증인 Q&A 쌍 (감시 연구) | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) dyads |
+| 국무위원 겸직 현황 | [minister-data](https://github.com/kyusik-yang/minister-data) |
+| R로 정치학 정량 분석 교육 | [assemblykor](https://github.com/kyusik-yang/assemblykor) |
 
 ---
 
@@ -355,6 +380,9 @@ MCP 방식: Claude에게 한 문장으로 질문 → 도구 자동 연결 → �
 | 특정 정책 영역 현재 계류의안 파악 | `get_pending_bills` (위원회/키워드 필터) |
 | 다음 본회의 표결 예정 법안 | `get_plenary_agenda` |
 | 가결 법안의 연대 구축 분석 | `get_bill_proposers` + `get_member_votes` |
+| 법안 제안이유 텍스트 분석 | `search_bills` (이 MCP) + [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) 텍스트 |
+| 위원회 감시 발언 패턴 분석 | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) 발언록 |
+| 인사청문회 분석 | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) hearing_type 필터 |
 
 ---
 
@@ -373,6 +401,11 @@ uv run pytest tests/ -v
 ---
 
 ## 변경 이력
+
+### v0.3.1 (2026-03)
+- README에 "관련 데이터 패키지" 섹션 추가: korean-assembly-bills, kr-hearings-data, minister-data, assemblykor 안내
+- 도구 docstring에 companion 패키지 안내 추가 (`get_bill_detail`, `search_bills`)
+- 연구 활용 사례 표에 companion 패키지 활용 워크플로 추가
 
 ### v0.3.0 (2026-03)
 - **Breaking**: 모든 도구의 `age` 파라미터를 `assembly`로 변경 (가독성 개선)

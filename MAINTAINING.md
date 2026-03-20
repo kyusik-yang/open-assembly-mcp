@@ -11,7 +11,7 @@ Claude Code와 함께 작업하는 방법도 포함합니다.
 open-assembly-mcp/
 ├── data_go_mcp/open_assembly/
 │   ├── client.py        # 열린국회정보 API httpx 클라이언트 (엔드포인트, 파싱)
-│   ├── server.py        # FastMCP 서버 + 도구 정의 (8개 @mcp.tool)
+│   ├── server.py        # FastMCP 서버 + 도구 정의 (12개 @mcp.tool)
 │   └── setup_cli.py     # --setup 위저드 (Claude Desktop config 자동 설정)
 ├── tests/
 │   ├── test_client.py   # API 응답 파싱 단위 테스트 (mock)
@@ -175,13 +175,17 @@ uv run pytest tests/ -v
 현재 확인된 코드는 `client.py` 상단에 주석과 함께 정리되어 있습니다.
 
 ```python
-EP_BILLS          = "nzmimeepazxkubdpn"   # 국회의원 발의법률안
-EP_BILL_DETAIL    = "ALLBILL"             # 의안정보 통합
-EP_BILL_REVIEW    = "nwbpacrgavhjryiph"   # 의안 처리·심사정보
-EP_MEMBER         = "nwvrqwxyaytdsfvhu"   # 국회의원 정보
-EP_VOTE           = "ncocpgfiaoituanbr"   # 본회의 표결현황 (집계)
-EP_BILL_PROPOSERS = "BILLINFOPPSR"        # 공동발의자
-EP_MEMBER_VOTES   = "nojepdqqaweusdfbi"  # 개인별 표결 (BILL_ID + AGE 필요)
+EP_BILLS                = "nzmimeepazxkubdpn"   # 국회의원 발의법률안
+EP_BILL_DETAIL          = "ALLBILL"             # 의안정보 통합
+EP_BILL_REVIEW          = "nwbpacrgavhjryiph"   # 의안 처리·심사정보
+EP_MEMBER               = "nwvrqwxyaytdsfvhu"   # 국회의원 정보 (현재 대수만)
+EP_ALLNAME              = "ALLNAMEMBER"          # 역대 국회의원 정보 (모든 대수)
+EP_VOTE                 = "ncocpgfiaoituanbr"   # 본회의 표결현황 (집계)
+EP_BILL_PROPOSERS       = "BILLINFOPPSR"        # 공동발의자
+EP_MEMBER_VOTES         = "nojepdqqaweusdfbi"   # 개인별 표결 (BILL_ID + AGE 필요)
+EP_PENDING_BILLS        = "nwbqublzajtcqpdae"   # 계류의안
+EP_PLENARY_AGENDA       = "nayjnliqaexiioauy"   # 본회의부의안건
+EP_COMMITTEE_REVIEW_MTG = "BILLJUDGECONF"       # 위원회 심사 회의정보
 ```
 
 새 엔드포인트가 필요하면 [open.assembly.go.kr](https://open.assembly.go.kr) →
