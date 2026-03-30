@@ -4,7 +4,7 @@
 [![GitHub](https://img.shields.io/badge/github-open--assembly--mcp-blue.svg?style=flat&logo=github)](https://github.com/kyusik-yang/open-assembly-mcp)
 [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-27%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-46%20passed-brightgreen)](tests/)
 [![한국어](https://img.shields.io/badge/docs-한국어-blue)](README.ko.md)
 
 **MCP server for the Korean National Assembly Open API** ([열린국회정보](https://open.assembly.go.kr)) — query bills, members, vote results, committee composition, pending bills, plenary agenda, and per-member vote records directly from Claude or any MCP-compatible AI client.
@@ -291,6 +291,7 @@ All tools return `total_count` and `has_more` for transparent pagination.
 | `get_member_votes` | `bill_id` (BILL_ID), `assembly`, `member_name`, `party`, `vote_result` | `votes[]` with per-member `RESULT_VOTE_MOD` |
 | `get_pending_bills` | `assembly`, `bill_name`, `committee`, `proposer` | `bills[]`, `total_count`, `has_more` |
 | `get_plenary_agenda` | `assembly`, `session` | `agenda_items[]`, `total_count`, `has_more` |
+| `get_bill_summary` | `assembly`, `bill_no` | `detail{}`, `review{}`, `proposers[]`, `committee_meetings[]` |
 
 > **BILL_ID vs BILL_NO** — many tools need `BILL_ID` (the internal ID, starts with `PRC_...`),
 > not `BILL_NO` (the public 7-digit number like `2216983`). Both are returned by `search_bills`
@@ -326,6 +327,7 @@ This MCP server queries the [열린국회정보 API](https://open.assembly.go.kr
 
 | Package | Data | Scale | Install |
 |---------|------|-------|---------|
+| [**kna**](https://github.com/kyusik-yang/kna) | Master bill database, roll call votes, DW-NOMINATE ideal points, bill texts | 110K bills, 2.4M votes (17th-22nd) | `pip install kna` |
 | [**korean-assembly-bills**](https://github.com/kyusik-yang/korean-assembly-bills) | Bill propose-reason texts (제안이유), co-sponsor records, MP metadata | 60,925 bills (20th-22nd) | `pip install korean-assembly-bills` |
 | [**kr-hearings-data**](https://github.com/kyusik-yang/kr-hearings-data) | Committee proceeding speeches, legislator-witness Q&A dyads | 9.9M speeches, 7.9M dyads (16th-22nd) | `pip install kr-hearings-data` |
 | [**minister-data**](https://github.com/kyusik-yang/minister-data) | Cabinet minister panel with dual-office (겸직) coding | 286 appointments (2000-2025) | [CSV on GitHub](https://github.com/kyusik-yang/minister-data) |
@@ -336,6 +338,7 @@ This MCP server queries the [열린국회정보 API](https://open.assembly.go.kr
 | You need... | Use |
 |-------------|-----|
 | Real-time bill metadata, vote tallies, member roster | **This MCP** (live API) |
+| Offline master database, roll calls, DW-NOMINATE ideal points | [kna](https://github.com/kyusik-yang/kna) |
 | Bill propose-reason text (제안이유) | [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) |
 | Committee hearing transcripts, speech-level data | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) |
 | Legislator-witness Q&A pairs for oversight research | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) dyads |

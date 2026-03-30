@@ -110,18 +110,18 @@ async def get_new_thing(self, age: str, some_param: Optional[str] = None, ...) -
 **3. `server.py`에 `@mcp.tool()` 추가**
 ```python
 @mcp.tool()
-async def get_new_thing(age: str, ...) -> dict[str, Any]:
+async def get_new_thing(assembly: str, ...) -> dict[str, Any]:
     """
     한글 설명 (Claude가 도구를 선택할 때 이 설명을 읽습니다).
 
     Args:
-        age: 대수 — 필수
+        assembly: 대수 — 필수
         ...
     Returns:
         ...
     """
     async with AssemblyAPIClient() as client:
-        rows, total = await client.get_new_thing(age=age, ...)
+        rows, total = await client.get_new_thing(age=assembly, ...)
         return {"items": rows, "total_count": total, ...}
 ```
 

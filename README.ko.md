@@ -4,6 +4,7 @@
 [![GitHub](https://img.shields.io/badge/github-open--assembly--mcp-blue.svg?style=flat&logo=github)](https://github.com/kyusik-yang/open-assembly-mcp)
 [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![Tests](https://img.shields.io/badge/tests-46%20passed-brightgreen)](tests/)
 [![English](https://img.shields.io/badge/docs-English-blue)](README.md)
 
 **열린국회정보 API용 MCP 서버** — Claude에서 법률안, 의원 정보, 표결 결과, 위원회 구성, 계류의안, 본회의 부의안건, 개인별 표결 기록을 직접 조회할 수 있습니다.
@@ -281,15 +282,16 @@ Claude 호출:
 |---|---|---|
 | `search_bills` | `assembly`, `bill_name`, `proposer`, `proc_result`, `committee`, `propose_dt_from/to` | `bills[]`, `total_count`, `has_more` |
 | `get_bill_detail` | `bill_no` (BILL_NO) | `bill{}` |
-| `get_bill_review` | `assembly`, `bill_no`, `committee` | `reviews[]` |
+| `get_bill_review` | `assembly`, `bill_no`, `committee` | `reviews[]`, `total_count`, `has_more` |
 | `get_bill_proposers` | `bill_id` (BILL_ID) | `proposers[]` |
 | `get_bill_committee_review` | `bill_id` (BILL_ID) | `meetings[]` |
-| `get_member_info` | `assembly`, `name`, `party`, `district`, `committee` | `members[]` |
-| `get_committee_members` | `assembly`, `committee` | `members[]` |
+| `get_member_info` | `assembly`, `name`, `party`, `district`, `committee` | `members[]`, `total_count`, `has_more` |
+| `get_committee_members` | `assembly`, `committee` | `members[]`, `total_count`, `has_more` |
 | `get_vote_results` | `assembly`, `bill_no`, `bill_name` | `votes[]` — `YES_TCNT`, `NO_TCNT`, `BLANK_TCNT`, `BILL_ID` 포함 |
 | `get_member_votes` | `bill_id` (BILL_ID), `assembly`, `member_name`, `party`, `vote_result` | `votes[]` — `RESULT_VOTE_MOD` 포함 |
 | `get_pending_bills` | `assembly`, `bill_name`, `committee`, `proposer` | `bills[]`, `total_count`, `has_more` |
 | `get_plenary_agenda` | `assembly`, `session` | `agenda_items[]`, `total_count`, `has_more` |
+| `get_bill_summary` | `assembly`, `bill_no` | `detail{}`, `review{}`, `proposers[]`, `committee_meetings[]` |
 
 > **BILL_ID vs BILL_NO 구분** — 여러 도구가 `BILL_NO`(7자리 공개 번호, 예: `2216983`)가 아닌
 > `BILL_ID`(내부 ID, 예: `PRC_...`)를 필요로 합니다. 두 값 모두 `search_bills`와
@@ -325,6 +327,7 @@ Claude 호출:
 
 | 패키지 | 데이터 | 규모 | 설치 |
 |--------|--------|------|------|
+| [**kna**](https://github.com/kyusik-yang/kna) | 법안 마스터 DB, 기명투표, DW-NOMINATE 이념점수, 법안 텍스트 | 110K 법안, 2.4M 표결 (17~22대) | `pip install kna` |
 | [**korean-assembly-bills**](https://github.com/kyusik-yang/korean-assembly-bills) | 법안 제안이유 텍스트, 공동발의자 기록, 의원 메타데이터 | 60,925건 (20~22대) | `pip install korean-assembly-bills` |
 | [**kr-hearings-data**](https://github.com/kyusik-yang/kr-hearings-data) | 위원회 회의 발언록, 의원-증인 Q&A dyad | 9.9M 발언, 7.9M dyad (16~22대) | `pip install kr-hearings-data` |
 | [**minister-data**](https://github.com/kyusik-yang/minister-data) | 국무위원 패널 데이터 + 겸직 코딩 | 286 임명 (2000~2025) | [GitHub CSV](https://github.com/kyusik-yang/minister-data) |
@@ -335,6 +338,7 @@ Claude 호출:
 | 필요한 데이터 | 사용 도구 |
 |---------------|-----------|
 | 실시간 법안 메타데이터, 표결 집계, 의원 명단 | **이 MCP** (live API) |
+| 오프라인 마스터 DB, 기명투표, DW-NOMINATE 이념점수 | [kna](https://github.com/kyusik-yang/kna) |
 | 법안 제안이유 텍스트 | [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) |
 | 위원회 회의록, 발언 단위 데이터 | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) |
 | 의원-증인 Q&A 쌍 (감시 연구) | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) dyads |
@@ -398,6 +402,11 @@ uv sync --group dev
 uv run pytest tests/ -v
 ```
 
+```bash
+# 서버 로컬 실행
+ASSEMBLY_API_KEY=your-key uv run python -m data_go_mcp.open_assembly.server
+```
+
 ---
 
 ## 변경 이력
@@ -414,6 +423,10 @@ uv run pytest tests/ -v
 - `_parse_response` INFO-200 대체 응답 형식 처리 추가
 - API가 무시하는 날짜 필터 파라미터 제거
 
+### v0.2.7 (2026-03)
+- README 플레이스홀더 예시("홍길동", "김OO" 등)를 실제 API 조회 결과로 교체
+- 시나리오 출력 예시를 실제 데이터로 갱신: 인공지능기본법 여정, 법원조직법 정당별 표결, 이준석 프로필, 과기위 계류의안, 본회의 부의안건
+
 ### v0.2.6 (2026-03)
 - `get_bill_summary` 편의 도구 추가: 상세정보+처리타임라인+공동발의자+위원회 회의를 병렬 호출로 한 번에 반환
 - 12개 도구 docstring 전면 개선: When-to-use, 워크플로 힌트, BILL_ID vs BILL_NO 구분 명시
@@ -427,6 +440,12 @@ uv run pytest tests/ -v
 
 ### v0.2.4 (2026-03)
 - `--setup` 마법사: ASCII 아트 배너 + 그라디언트 색상, 애니메이션 검증, 전문적 이중언어 프롬프트
+
+### v0.2.3 (2026-03)
+- `--setup` 마법사: ANSI 색상, box-drawing 헤더, 전문적 이중언어 프롬프트
+
+### v0.2.2 (2026-03)
+- `--setup` 마법사: 이중언어 프롬프트 (EN/KR), 학술 연락처 안내
 
 ### v0.2.1 (2026-03)
 - `--setup` 마법사 추가: Claude Desktop 자동 설정
@@ -449,3 +468,7 @@ Apache 2.0. [LICENSE](LICENSE) 참조.
 > 이 프로젝트는 [Koomook/data-go-mcp-servers](https://github.com/Koomook/data-go-mcp-servers)의 구조와 패턴을 참고해 제작했습니다.
 
 *이 프로젝트는 대한민국 국회 또는 open.assembly.go.kr과 공식적인 관계가 없습니다.*
+
+---
+
+*Built with [Claude Code](https://claude.ai/code)*
