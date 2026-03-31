@@ -333,11 +333,12 @@ This MCP server queries the [열린국회정보 API](https://open.assembly.go.kr
 | [**minister-data**](https://github.com/kyusik-yang/minister-data) | Cabinet minister panel with dual-office (겸직) coding | 286 appointments (2000-2025) | [CSV on GitHub](https://github.com/kyusik-yang/minister-data) |
 | [**assemblykor**](https://github.com/kyusik-yang/assemblykor) | Curated teaching datasets (bills, votes, wealth, speeches) | R package, 7 datasets | `remotes::install_github("kyusik-yang/assemblykor")` |
 
-**Choosing the right tool:**
+**Quick rule**: Use **this MCP** for real-time lookups and exploratory queries via Claude. Use **kna** for offline statistical analysis and reproducible research in Python/R.
 
 | You need... | Use |
 |-------------|-----|
 | Real-time bill metadata, vote tallies, member roster | **This MCP** (live API) |
+| Pending bills, plenary agenda (time-sensitive) | **This MCP** (live API) |
 | Offline master database, roll calls, DW-NOMINATE ideal points | [kna](https://github.com/kyusik-yang/kna) |
 | Bill propose-reason text (제안이유) | [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) |
 | Committee hearing transcripts, speech-level data | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) |

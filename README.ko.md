@@ -333,11 +333,12 @@ Claude 호출:
 | [**minister-data**](https://github.com/kyusik-yang/minister-data) | 국무위원 패널 데이터 + 겸직 코딩 | 286 임명 (2000~2025) | [GitHub CSV](https://github.com/kyusik-yang/minister-data) |
 | [**assemblykor**](https://github.com/kyusik-yang/assemblykor) | 교육용 데이터셋 (법안, 표결, 재산, 발언) | R 패키지, 7개 데이터셋 | `remotes::install_github("kyusik-yang/assemblykor")` |
 
-**용도별 선택 가이드:**
+**간단 구분**: 실시간 조회·탐색은 **이 MCP**(Claude에서 자연어로 질문). 오프라인 통계 분석·재현 가능한 연구는 **kna**(Python/R).
 
 | 필요한 데이터 | 사용 도구 |
 |---------------|-----------|
 | 실시간 법안 메타데이터, 표결 집계, 의원 명단 | **이 MCP** (live API) |
+| 계류의안, 본회의 부의안건 (시점 민감) | **이 MCP** (live API) |
 | 오프라인 마스터 DB, 기명투표, DW-NOMINATE 이념점수 | [kna](https://github.com/kyusik-yang/kna) |
 | 법안 제안이유 텍스트 | [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) |
 | 위원회 회의록, 발언 단위 데이터 | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) |
