@@ -13,11 +13,80 @@
 
 ---
 
-## Demo
+## Showcase
 
-Ask Claude in natural language. Claude calls the right tools and chains them automatically.
+한국어나 영어로 자연스럽게 질문하면 됩니다. Claude가 필요한 툴을 고르고 체인으로 연결합니다.
 
-![Demo: Claude conversation with open-assembly-mcp](assets/demo-conversation.gif)
+---
+
+### 1 — 당론 분석 + Rice index
+
+> **"22대 법원조직법 표결, 정당별 Rice index와 이탈표 알려줘"**
+
+Claude calls `get_vote_results` → `get_party_cohesion`
+
+```
+법원조직법 일부개정법률안(대안) — 2026-02 의결
+전체: 찬성 173 / 반대 73 / 기권 1
+
+정당별 표결:
+  더불어민주당  찬성 152 / 기권 1 / 불참 9    Rice index 0.993
+  국민의힘     반대  70 / 불참 36              Rice index 1.000
+  조국혁신당   찬성  12                         Rice index 1.000
+  진보당       찬성   4                         Rice index 1.000
+  개혁신당     반대   2 / 불참 1                Rice index 1.000
+  무소속       찬성   3 / 불참 3
+
+이탈표:
+  이학영 (더불어민주당 | 경기 군포시) — 기권
+```
+
+---
+
+### 2 — 의원 의정활동 전체를 한 번에
+
+> **"이준석 의원 22대 발의 법안 전부 통계내줘"**
+
+Claude calls `analyze_legislator(name="이준석", assembly="22")` — 툴 호출 1번, 최대 500건 자동 페이지네이션
+
+```
+이준석 (개혁신당 | 경기 화성시을 | 22대)
+소속: 과학기술정보방송통신위원회
+
+발의 법안: 총 14건
+  처리 결과: 계류 중 13건 / 대안반영폐기 1건
+  위원회별:  과학기술정보방송통신위원회 14건
+
+최근 발의 (5건):
+  전자상거래 등에서의 소비자보호에 관한 법률 일부개정법률안     2026-02-25
+  정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안  2026-02-05
+  소득세법 일부개정법률안                                       2025-08-19
+  전기통신사업법 일부개정법률안                                  2025-08-06
+  공공기관의 운영에 관한 법률 일부개정법률안                      2025-07-10
+```
+
+---
+
+### 3 — 법안 입법 여정 전체
+
+> **"인공지능기본법 (의안번호 2206772) 입법 과정 처음부터 끝까지 보여줘"**
+
+Claude calls `get_bill_summary(assembly="22", bill_no="2206772")` — 상세정보·심사정보·발의자·위원회회의 4개 서브호출 병렬 실행
+
+```
+인공지능 발전과 신뢰 기반 조성 등에 관한 기본법안 (BILL_NO 2206772)
+발의: 과학기술정보방송통신위원장
+
+위원회 심사:
+  2024-11-26  과학기술정보방송통신위원회 상정
+  2024-11-26  과학기술정보방송통신위원회 의결 (원안가결)
+
+본회의:
+  2024-12-17  의결 — 찬성 260 / 반대 1 / 기권 3
+  2025-01-21  공포
+
+원문: https://likms.assembly.go.kr/bill/billDetail.do?billId=PRC_R2V4H1W1T2K5M1O6E4Q9T0V7Q9S0U0
+```
 
 ---
 
@@ -103,9 +172,9 @@ To use the Assembly tools from claude.ai, you would need to deploy the server pu
 
 ---
 
-## Usage Examples
+## More Examples
 
-Ask Claude in natural language (Korean or English). Claude chains the tools automatically.
+위 [Showcase](#showcase) 외 추가 시나리오입니다.
 
 ---
 
@@ -139,9 +208,9 @@ Claude calls:
 
 ---
 
-### Scenario 2 — Trace a single bill's full legislative journey
+### Scenario 2 — Trace committee and plenary steps separately
 
-> **"인공지능기본법 (의안번호 2206772)의 입법 여정을 처음부터 끝까지 보여줘. 위원회 심사 일정, 본회의 표결 결과, 공포일까지 알려줘."**
+> **"인공지능기본법 (의안번호 2206772)의 위원회 심사 경로와 본회의 표결 일정을 각각 보여줘."**
 
 Claude calls:
 1. `get_bill_review(assembly="22", bill_no="2206772")` → committee + plenary timeline
@@ -168,63 +237,7 @@ Claude calls:
 
 ---
 
-### Scenario 3 — Analyze party-line voting on a bill
-
-> **"22대 국회에서 법원조직법 개정안 표결에서 각 정당 의원들은 어떻게 투표했나? 당론을 이탈한 의원이 있었나?"**
-
-Claude calls:
-1. `get_vote_results(assembly="22", bill_name="법원조직법")` → finds bill + BILL_ID
-2. `get_party_cohesion(bill_id="PRC_H2W6O0K2D1T1Y2B0O5J2K5Q5A8Z0Y3", assembly="22")` → Rice index by party + dissenters
-
-**Sample output (real data, BILL_NO 2216843):**
-```
-법원조직법 일부개정법률안(대안)(법제사법위원장) (2026-02 의결)
-전체: 찬성 173 / 반대 73 / 기권 1
-
-정당별 표결:
-  더불어민주당  찬성 152 / 기권 1  / 불참 9   Rice index: 0.993
-  국민의힘     반대  70 / 불참 36             Rice index: 1.000
-  조국혁신당   찬성  12                        Rice index: 1.000
-  진보당       찬성   4                        Rice index: 1.000
-  개혁신당     반대   2 / 불참 1               Rice index: 1.000
-  무소속       찬성   3 / 불참 3
-
-당론 이탈:
-  이학영 (더불어민주당 | 경기 군포시) — 기권
-```
-
----
-
-### Scenario 4 — Profile a single member's legislative activity
-
-> **"이준석 의원 (22대)의 입법 활동을 요약해줘. 어떤 법안을 발의했고, 최근 표결에서 여당 vs 야당 법안에 어떻게 투표했나?"**
-
-Claude calls:
-1. `get_member_info(assembly="22", name="이준석")` → party, district, committee
-2. `search_bills(assembly="22", proposer="이준석", page_size=100)` → all sponsored bills
-3. `get_vote_results(assembly="22", page_size=20)` → recent voted bills
-4. `get_member_votes(bill_id=..., assembly="22", member_name="이준석")` × 20 bills
-
-**Sample output (real data, 2026-03):**
-```
-이준석 (개혁신당 | 경기 화성시을 | 22대)
-소속 위원회: 과학기술정보방송통신위원회
-
-발의 법안: 총 14건
-  대안반영폐기 1건 / 계류 중 13건
-
-최근 발의 법안:
-  전자상거래 등에서의 소비자보호에 관한 법률 일부개정법률안  2026-02-25
-  정보통신망 이용촉진 및 정보보호 등에 관한 법률 일부개정법률안  2026-02-05
-  소득세법 일부개정법률안  2025-08-19
-
-최근 표결 50건:
-  찬성 13 / 불참 37
-```
-
----
-
-### Scenario 5 — Check pending legislation in a committee
+### Scenario 3 — Check pending legislation in a committee
 
 > **"과학기술정보방송통신위원회에 현재 계류 중인 법안은 몇 개야? AI·반도체 관련 법안만 따로 봐줘."**
 
@@ -248,7 +261,7 @@ AI·반도체 관련 (키워드 필터):
 
 ---
 
-### Scenario 6 — Check what's on the next plenary agenda
+### Scenario 4 — Check what's on the next plenary agenda
 
 > **"다음 본회의에 상정될 법안 목록을 알려줘."**
 
