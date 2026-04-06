@@ -327,9 +327,9 @@ All tools return `total_count` and `has_more` for transparent pagination.
 
 ### Universal Access: discover_apis + query_assembly
 
-The 12 dedicated tools cover the most common legislative research workflows.
-For anything else — schedules, petitions, NARS research reports, NABO budget analyses,
-press releases, or any of the 276+ total endpoints — use the two universal access tools.
+The 18 dedicated tools cover the most common legislative research workflows.
+For anything not yet wrapped — NABO budget analyses, press releases, or any of the 276+
+total endpoints — use the two universal access tools.
 
 **Step 1: find the endpoint**
 
@@ -342,7 +342,7 @@ Claude calls `discover_apis(keyword="청원")` and returns matching codes with d
 **Step 2: call it**
 
 ```
-"AGE=22로 청원 현황 조회해줘"
+"22대 국회 청원 현황 조회해줘"
 ```
 
 Claude calls `query_assembly(endpoint_code="<code>", params={"AGE": "22"})`.
