@@ -1,7 +1,7 @@
 [project]
 name = "open-assembly-mcp"
-version = "0.3.1"
-description = "MCP server for Korean National Assembly Open API (open.assembly.go.kr) — bills, members, votes, committee composition, pending bills, plenary agenda, and per-member vote records"
+version = "0.6.0"
+description = "MCP server for Korean National Assembly Open API (open.assembly.go.kr) — bills, members, votes, committee composition, pending bills, plenary agenda, per-member vote records, party cohesion analysis, NARS reports, petitions, schedule, hearings, and universal API access"
 readme = "README.md"
 authors = [
     { name = "Kyusik Yang", email = "kyusik.yang@nyu.edu" }

@@ -23,7 +23,19 @@ EP_PENDING_BILLS = "nwbqublzajtcqpdae"      # 계류의안 (미처리 현안 목
 EP_PLENARY_AGENDA = "nayjnliqaexiioauy"     # 본회의부의안건 (다음 본회의 상정 예정 안건)
 EP_COMMITTEE_REVIEW_MTG = "BILLJUDGECONF"  # 위원회 심사 회의정보 (requires BILL_ID)
 
-# Not available as Open API (only file data): 회의록, 청원, 법률안 제안이유
+# Phase 3 endpoint codes (verified via hollobit/assembly-api-mcp source review, 2026-04)
+# Parameter names are best-known from API patterns; use query_endpoint for custom params.
+EP_NARS_REPORTS = "naaborihbkorknasp"          # 국회입법조사처 보고서 (NARS)
+EP_PETITION_PENDING = "nvqbafvaajdiqhehi"       # 계류 청원
+EP_PETITION_LIST = "PTTRCP"                     # 청원 접수 목록
+EP_SCHEDULE_ALL = "ALLSCHEDULE"                 # 국회 통합 일정
+EP_SCHEDULE_PLENARY = "nekcaiymatialqlxr"       # 본회의 일정
+EP_SCHEDULE_COMMITTEE = "nrsldhjpaemrmolla"     # 위원회 일정
+EP_HEARING_CONFIRM = "VCONFCFRMCONFLIST"        # 인사청문회 목록
+EP_HEARING_PUBLIC = "VCONFPHCONFLIST"           # 공청회 목록
+
+# Not available as Open API (full documents only): 회의록 전문, 법률안 제안이유
+# Some petition metadata IS available via EP_PETITION_* above (statistics and status).
 
 # Assembly age label for ALLNAMEMBER (e.g., "22" -> "제22대")
 _AGE_LABEL = {str(i): f"제{i}대" for i in range(1, 30)}
@@ -402,3 +414,50 @@ class AssemblyAPIClient:
     ) -> tuple[list[dict], int]:
         """의안 위원회 심사 회의정보 조회 — 특정 의안이 심사된 위원회 회의 목록."""
         return await self._get(EP_COMMITTEE_REVIEW_MTG, {"BILL_ID": bill_id})
+
+    # ------------------------------------------------------------------
+    # P3: 범용 엔드포인트 호출
+    # ------------------------------------------------------------------
+
+    async def query_endpoint(
+        self,
+        endpoint_code: str,
+        params: Optional[dict] = None,
+    ) -> tuple[list[dict], int, Optional[dict]]:
+        """Generic endpoint caller — call any open.assembly.go.kr API directly.
+
+        Returns (rows, total_count, raw_response) where:
+          - rows, total_count are populated when standard head/row format is used.
+          - raw_response is the full JSON body when the endpoint uses a
+            non-standard format (rows will be empty in that case).
+
+        Pattern adapted from hollobit/assembly-api-mcp
+        (MIT License, https://github.com/hollobit/assembly-api-mcp).
+        """
+        merged = {
+            **self._base_params(),
+            **{k: v for k, v in (params or {}).items() if v is not None},
+        }
+        url = f"{BASE_URL}/{endpoint_code}"
+        try:
+            resp = await self.client.get(url, params=merged)
+            resp.raise_for_status()
+            data = resp.json()
+            try:
+                rows, total = self._parse_response(data, endpoint_code)
+                return rows, total, None
+            except (ValueError, KeyError):
+                # Endpoint uses a non-standard response structure — return raw JSON
+                return [], 0, data
+        except httpx.TimeoutException as e:
+            raise ValueError(
+                f"Request timed out after 30s — API may be slow, try again: {e}"
+            ) from e
+        except httpx.HTTPStatusError as e:
+            raise ValueError(
+                f"HTTP {e.response.status_code}: {e.response.text}"
+            ) from e
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Request failed: {e}") from e

@@ -469,3 +469,112 @@ class TestGetMemberInfo:
             assert rows[0]["HG_NM"] == "홍길동"
             call_url = mock_get.call_args[0][0]
             assert "ALLNAMEMBER" in call_url
+
+
+class TestQueryEndpoint:
+    """Tests for the generic query_endpoint method (Phase 1 universal access)."""
+
+    @pytest.mark.asyncio
+    async def test_standard_response_returns_rows_and_total(self, mock_env, sample_bill_response):
+        """표준 head/row 응답 형식 파싱 성공 시 (rows, total, None) 반환."""
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = sample_bill_response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                rows, total, raw = await client.query_endpoint(
+                    "nzmimeepazxkubdpn",
+                    {"AGE": "22"},
+                )
+
+        assert len(rows) == 1
+        assert total == 47
+        assert raw is None
+
+    @pytest.mark.asyncio
+    async def test_nonstandard_response_returns_raw_json(self, mock_env):
+        """비표준 응답 형식일 때 ([], 0, raw_json) 반환."""
+        nonstandard_response = {"custom_key": {"data": [1, 2, 3]}}
+
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = nonstandard_response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                rows, total, raw = await client.query_endpoint("unknown_endpoint")
+
+        assert rows == []
+        assert total == 0
+        assert raw == nonstandard_response
+
+    @pytest.mark.asyncio
+    async def test_passes_params_to_request(self, mock_env, sample_bill_response):
+        """params dict가 요청에 올바르게 전달되는지 확인."""
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = sample_bill_response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                await client.query_endpoint(
+                    "nzmimeepazxkubdpn",
+                    {"AGE": "22", "BILL_NAME": "인공지능"},
+                )
+
+        call_params = mock_get.call_args[1]["params"]
+        assert call_params["AGE"] == "22"
+        assert call_params["BILL_NAME"] == "인공지능"
+        assert call_params["KEY"] == "test-api-key-1234"
+        assert call_params["Type"] == "json"
+
+    @pytest.mark.asyncio
+    async def test_none_values_in_params_excluded(self, mock_env, sample_bill_response):
+        """params의 None 값은 요청에서 제외되는지 확인."""
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = sample_bill_response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                await client.query_endpoint(
+                    "nzmimeepazxkubdpn",
+                    {"AGE": "22", "BILL_NAME": None},
+                )
+
+        call_params = mock_get.call_args[1]["params"]
+        assert "AGE" in call_params
+        assert "BILL_NAME" not in call_params
+
+    @pytest.mark.asyncio
+    async def test_timeout_raises_descriptive_error(self, mock_env):
+        """TimeoutException이 명확한 ValueError로 변환되는지 확인."""
+        import httpx
+
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_get.side_effect = httpx.TimeoutException("timed out")
+
+            async with AssemblyAPIClient() as client:
+                with pytest.raises(ValueError, match="timed out"):
+                    await client.query_endpoint("some_endpoint")
+
+    @pytest.mark.asyncio
+    async def test_empty_params_uses_base_params_only(self, mock_env, sample_bill_response):
+        """params=None이면 base params만 사용하는지 확인."""
+        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_response = MagicMock()
+            mock_response.json.return_value = sample_bill_response
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
+
+            async with AssemblyAPIClient() as client:
+                rows, total, raw = await client.query_endpoint("nzmimeepazxkubdpn")
+
+        call_params = mock_get.call_args[1]["params"]
+        assert "KEY" in call_params
+        assert "Type" in call_params

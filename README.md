@@ -4,10 +4,10 @@
 [![GitHub](https://img.shields.io/badge/github-open--assembly--mcp-blue.svg?style=flat&logo=github)](https://github.com/kyusik-yang/open-assembly-mcp)
 [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-46%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-106%20passed-brightgreen)](tests/)
 [![한국어](https://img.shields.io/badge/docs-한국어-blue)](README.ko.md)
 
-**MCP server for the Korean National Assembly Open API** ([열린국회정보](https://open.assembly.go.kr)) — query bills, members, vote results, committee composition, pending bills, plenary agenda, and per-member vote records directly from Claude or any MCP-compatible AI client.
+**MCP server for the Korean National Assembly Open API** ([열린국회정보](https://open.assembly.go.kr)) — query bills, members, vote results, committee composition, pending bills, plenary agenda, per-member vote records, NARS reports, petitions, schedule, and hearings directly from Claude or any MCP-compatible AI client.
 
 ![Before vs After](assets/before-after.svg)
 
@@ -278,6 +278,8 @@ All tools return `total_count` and `has_more` for transparent pagination.
 
 ### Quick Reference
 
+**Core tools** (dedicated to common legislative research workflows):
+
 | Tool | Key parameters | Returns |
 |---|---|---|
 | `search_bills` | `assembly`, `bill_name`, `proposer`, `proc_result`, `committee`, `propose_dt_from/to` | `bills[]`, `total_count`, `has_more` |
@@ -293,10 +295,62 @@ All tools return `total_count` and `has_more` for transparent pagination.
 | `get_plenary_agenda` | `assembly`, `session` | `agenda_items[]`, `total_count`, `has_more` |
 | `get_bill_summary` | `assembly`, `bill_no` | `detail{}`, `review{}`, `proposers[]`, `committee_meetings[]` |
 
+**Chain & research tools** (compound queries and computed metrics):
+
+| Tool | Key parameters | Returns |
+|---|---|---|
+| `analyze_legislator` | `name`, `assembly` | `member{}`, `bills{total, by_result, by_committee, by_year, recent, all}` |
+| `get_party_cohesion` | `bill_id` (BILL_ID), `assembly` | `by_party{}` with Rice index, `dissenters[]` |
+
+**API expansion tools** (NARS, petitions, schedule, hearings — new in v0.6.0):
+
+| Tool | Key parameters | Returns |
+|---|---|---|
+| `search_nars_reports` | `keyword`, `date_from`, `date_to`, `page`, `page_size` | `reports[]`, `total_count`, `has_more` |
+| `search_petitions` | `assembly`, `keyword`, `include_closed`, `page`, `page_size` | `petitions[]`, `total_count`, `has_more` |
+| `get_schedule` | `assembly`, `schedule_type` (all/plenary/committee), `committee`, `page`, `page_size` | `schedule[]`, `total_count`, `has_more` |
+| `search_hearings` | `assembly`, `hearing_type` (confirmation/public), `nominee_name`, `committee` | `hearings[]`, `total_count`, `has_more` |
+
+**Universal access tools** (reach any of the 276+ endpoints not yet covered above):
+
+| Tool | Key parameters | Returns |
+|---|---|---|
+| `discover_apis` | `keyword` (optional) | Verified endpoint registry, grouped by category |
+| `query_assembly` | `endpoint_code`, `params` (dict), `page`, `page_size` | `rows[]`, `total_count`, `raw_response` |
+
+> `discover_apis` → find an endpoint code → `query_assembly` → call it directly.
+
 > **BILL_ID vs BILL_NO** — many tools need `BILL_ID` (the internal ID, starts with `PRC_...`),
 > not `BILL_NO` (the public 7-digit number like `2216983`). Both are returned by `search_bills`
 > and `get_pending_bills`. Tools that need `BILL_ID`: `get_bill_proposers`,
 > `get_member_votes`, `get_bill_committee_review`.
+
+### Universal Access: discover_apis + query_assembly
+
+The 12 dedicated tools cover the most common legislative research workflows.
+For anything else — schedules, petitions, NARS research reports, NABO budget analyses,
+press releases, or any of the 276+ total endpoints — use the two universal access tools.
+
+**Step 1: find the endpoint**
+
+```
+"열린국회 API에서 청원 관련 엔드포인트를 찾아줘"
+```
+
+Claude calls `discover_apis(keyword="청원")` and returns matching codes with descriptions.
+
+**Step 2: call it**
+
+```
+"AGE=22로 청원 현황 조회해줘"
+```
+
+Claude calls `query_assembly(endpoint_code="<code>", params={"AGE": "22"})`.
+
+For the full catalog of 276+ endpoints:
+https://open.assembly.go.kr/portal/data/service/selectAPIServicePage.do
+
+---
 
 ### Coverage by Assembly
 
@@ -314,6 +368,14 @@ All tools return `total_count` and `has_more` for transparent pagination.
 | `get_plenary_agenda` | 22nd recommended | Bills scheduled for the next plenary session |
 | `get_bill_committee_review` | 16th–22nd | Committee meetings for a specific bill |
 | `get_bill_summary` | 16th–22nd | **Convenience** — chains detail + review + proposers + committee meetings in one call |
+| `analyze_legislator` | 16th–22nd | **Chain** — member profile + all sponsored bills + career stats (by_result, by_year, by_committee) |
+| `get_party_cohesion` | 18th–22nd recommended | **Research** — per-party Rice index + dissenters; requires BILL_ID from get_vote_results |
+| `search_nars_reports` | All | NARS research reports by keyword or date range |
+| `search_petitions` | 16th–22nd | Pending or all-time petitions; `include_closed=True` for closed petitions |
+| `get_schedule` | All | Assembly schedule — all, plenary-only, or committee-specific |
+| `search_hearings` | 16th–22nd | Personnel confirmation hearings or public hearings |
+| `discover_apis` | All | Searches the verified endpoint registry; use before `query_assembly` |
+| `query_assembly` | All | Universal fallback — calls any of the 276+ endpoints directly |
 
 **Not available via Open API**: transcripts, citizen petitions, bill full text.
 For bill texts and transcripts, see [Related Data Packages](#related-data-packages) below.
@@ -377,14 +439,17 @@ With MCP:    ask Claude in one sentence → tools chain automatically → result
 | Task | Tools used |
 |---|---|
 | Co-sponsorship network for a policy domain | `search_bills` + `get_bill_proposers` |
-| Party-line discipline on a specific vote | `get_vote_results` + `get_member_votes` (party filter) |
+| Party-line discipline on a specific vote | `get_vote_results` + **`get_party_cohesion`** |
+| Rice index + who defected | **`get_party_cohesion`** → `by_party[party]["rice_index"]` + `dissenters[]` |
 | Cross-party voting coalitions | `get_vote_results` + `get_member_votes` |
-| Full legislative career of a single member | `search_bills` (proposer filter) + `get_member_votes` |
+| Full legislative career of a single member | **`analyze_legislator`** (one call) |
+| Legislator activity by year or committee | **`analyze_legislator`** → `bills.by_year`, `bills.by_committee` |
 | Committee composition by party | `get_committee_members` |
-| Bill timeline from filing to promulgation | `get_bill_review` + `get_bill_committee_review` + `get_bill_detail` |
+| Bill timeline from filing to promulgation | `get_bill_summary` or `get_bill_review` + `get_bill_committee_review` + `get_bill_detail` |
 | Currently active legislation in a policy area | `get_pending_bills` (committee/keyword filter) |
 | Upcoming plenary votes | `get_plenary_agenda` |
 | Majority-building analysis for a passed bill | `get_bill_proposers` + `get_member_votes` |
+| Access non-core APIs (petitions, schedules, NARS…) | `discover_apis` → `query_assembly` |
 | Bill propose-reason text analysis | `search_bills` (this MCP) + [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) for texts |
 | Committee oversight speech patterns | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) speeches |
 | Confirmation hearing analysis | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) with hearing_type filter |
@@ -410,7 +475,38 @@ ASSEMBLY_API_KEY=your-key uv run python -m data_go_mcp.open_assembly.server
 
 ---
 
+## Acknowledgments
+
+The `discover_apis` and `query_assembly` tools were inspired by the universal-access
+pattern in [hollobit/assembly-api-mcp](https://github.com/hollobit/assembly-api-mcp)
+(MIT License), with explicit permission from the author. The endpoint registry structure
+and raw-fallback design are adapted from that project; all implementation is original Python.
+See [CREDITS.md](CREDITS.md) for a detailed breakdown.
+
+---
+
 ## Changelog
+
+### v0.6.0 (2026-04)
+- Added `search_nars_reports`: search 국회입법조사처 research reports by keyword or date range
+- Added `search_petitions`: query pending or all-time petitions by assembly and keyword; automatically routes to the correct endpoint (`include_closed` toggle)
+- Added `get_schedule`: unified schedule lookup — all, plenary-only, or committee-specific; `schedule_type` parameter is case-insensitive
+- Added `search_hearings`: personnel confirmation hearings and public hearings; `hearing_type` routes to the correct endpoint
+- All four new tools return `has_more` pagination flag and `raw_response` fallback for non-standard API formats
+- Expanded registry from 11 to 28 entries (NARS×1, petitions×5, schedule×3, hearings×2, meeting records×2, committees×2, bills×2 new; total includes 9 bills + 2 members + 2 votes carried over)
+- Test suite: 80 → 106 tests
+
+### v0.5.0 (2026-04)
+- Added `analyze_legislator` chain tool: one-shot legislator profile — member info + all sponsored bills (up to 500, paginated) + career statistics (by_result, by_committee, by_year, recent 5)
+- Added `get_party_cohesion` research tool: per-party vote aggregation, Rice index, dominant position, individual dissenters (type: opposite / abstain); handles all-abstain edge case (rice_index = None)
+- Both new tools handle parallel sub-calls, ambiguous member names, pagination, and graceful error isolation
+
+### v0.4.0 (2026-04)
+- Added `discover_apis` tool: keyword search across the verified endpoint registry
+- Added `query_assembly` tool: universal fallback to call any of the 276+ open.assembly.go.kr endpoints directly; handles both standard (head/row) and non-standard response formats
+- Added `registry.py` with 11 verified endpoint entries organized by category
+- Added `CREDITS.md` with detailed attribution for hollobit/assembly-api-mcp patterns
+- Bumped description and keywords to reflect expanded API coverage
 
 ### v0.3.1 (2026-03)
 - Added "Related Data Packages" section to README with cross-references to korean-assembly-bills, kr-hearings-data, minister-data, assemblykor

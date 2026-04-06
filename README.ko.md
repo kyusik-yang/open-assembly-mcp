@@ -4,7 +4,7 @@
 [![GitHub](https://img.shields.io/badge/github-open--assembly--mcp-blue.svg?style=flat&logo=github)](https://github.com/kyusik-yang/open-assembly-mcp)
 [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-46%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-106%20passed-brightgreen)](tests/)
 [![English](https://img.shields.io/badge/docs-English-blue)](README.md)
 
 **열린국회정보 API용 MCP 서버** — Claude에서 법률안, 의원 정보, 표결 결과, 위원회 구성, 계류의안, 본회의 부의안건, 개인별 표결 기록을 직접 조회할 수 있습니다.
