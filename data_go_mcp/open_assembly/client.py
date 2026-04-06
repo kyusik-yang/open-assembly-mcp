@@ -18,7 +18,7 @@ EP_MEMBER = "nwvrqwxyaytdsfvhu"             # 국회의원 정보 통합 API (cu
 EP_ALLNAME = "ALLNAMEMBER"                  # 역대 국회의원 정보 (all assemblies, correct data)
 EP_VOTE = "ncocpgfiaoituanbr"               # 의안별 표결현황
 EP_BILL_PROPOSERS = "BILLINFOPPSR"          # 의안 제안자정보 (requires BILL_ID)
-EP_MEMBER_VOTES = "nojepdqqaweusdfbi"       # 국회의원 본회의 표결정보 (requires BILL_ID + AGE)
+EP_MEMBER_VOTES = "nojepdqqaweusdfbi"       # 국회의원 본회의 표결정보 (requires BILL_ID + assembly)
 EP_PENDING_BILLS = "nwbqublzajtcqpdae"      # 계류의안 (미처리 현안 목록)
 EP_PLENARY_AGENDA = "nayjnliqaexiioauy"     # 본회의부의안건 (다음 본회의 상정 예정 안건)
 EP_COMMITTEE_REVIEW_MTG = "BILLJUDGECONF"  # 위원회 심사 회의정보 (requires BILL_ID)
@@ -37,8 +37,8 @@ EP_HEARING_PUBLIC = "VCONFPHCONFLIST"           # 공청회 목록
 # Not available as Open API (full documents only): 회의록 전문, 법률안 제안이유
 # Some petition metadata IS available via EP_PETITION_* above (statistics and status).
 
-# Assembly age label for ALLNAMEMBER (e.g., "22" -> "제22대")
-_AGE_LABEL = {str(i): f"제{i}대" for i in range(1, 30)}
+# Assembly label for ALLNAMEMBER (e.g., "22" -> "제22대")
+_ASSEMBLY_LABEL = {str(i): f"제{i}대" for i in range(1, 30)}
 
 
 class AssemblyAPIClient:
@@ -120,7 +120,7 @@ class AssemblyAPIClient:
 
     async def search_bills(
         self,
-        age: str,
+        assembly: str,
         bill_name: Optional[str] = None,
         proposer: Optional[str] = None,
         proc_result: Optional[str] = None,
@@ -140,7 +140,7 @@ class AssemblyAPIClient:
         """
         if not propose_dt_from and not propose_dt_to:
             return await self._get(EP_BILLS, {
-                "AGE": age,
+                "AGE": assembly,
                 "BILL_NAME": bill_name,
                 "PROPOSER": proposer,
                 "PROC_RESULT": proc_result,
@@ -154,7 +154,7 @@ class AssemblyAPIClient:
         p = 1
         while p <= 20:
             rows, total = await self._get(EP_BILLS, {
-                "AGE": age,
+                "AGE": assembly,
                 "BILL_NAME": bill_name,
                 "PROPOSER": proposer,
                 "PROC_RESULT": proc_result,
@@ -183,14 +183,14 @@ class AssemblyAPIClient:
         """의안 상세정보 조회 (의안정보 통합 API)."""
         return await self._get(EP_BILL_DETAIL, {"BILL_NO": bill_no})
 
-    def _parse_allname_for_age(self, rows: list[dict], age: str) -> list[dict]:
+    def _parse_allname_for_assembly(self, rows: list[dict], assembly: str) -> list[dict]:
         """Parse ALLNAMEMBER rows and extract per-assembly data.
 
         ALLNAMEMBER returns one row per MP with slash-separated fields for
         multi-term members (e.g., party="새누리당/자유한국당" for 2 terms).
         This method extracts the data for a specific assembly.
         """
-        age_label = _AGE_LABEL.get(age, f"제{age}대")
+        assembly_label = _ASSEMBLY_LABEL.get(assembly, f"제{assembly}대")
         slash_fields = {
             "PLPT_NM": "POLY_NM",
             "ELECD_NM": "ORIG_NM",
@@ -201,9 +201,9 @@ class AssemblyAPIClient:
         for r in rows:
             era_str = r.get("GTELT_ERACO") or ""
             eras = [e.strip() for e in era_str.split(", ") if e.strip()]
-            if age_label not in eras:
+            if assembly_label not in eras:
                 continue
-            idx = eras.index(age_label)
+            idx = eras.index(assembly_label)
             n_eras = len(eras)
 
             mapped: dict[str, Any] = {
@@ -233,7 +233,7 @@ class AssemblyAPIClient:
     async def get_member_info(
         self,
         unit_cd: str = "100022",
-        age: Optional[str] = None,
+        assembly: Optional[str] = None,
         name: Optional[str] = None,
         party: Optional[str] = None,
         district: Optional[str] = None,
@@ -247,8 +247,8 @@ class AssemblyAPIClient:
         The EP_MEMBER endpoint (nwvrqwxyaytdsfvhu) ignores UNIT_CD and always
         returns current-assembly data, which is incorrect for historical queries.
         """
-        if age is None:
-            age = unit_cd.replace("100", "").lstrip("0") if unit_cd.startswith("100") else "22"
+        if assembly is None:
+            assembly = unit_cd.replace("100", "").lstrip("0") if unit_cd.startswith("100") else "22"
 
         # If name is given, ALLNAMEMBER supports NAAS_NM filter (efficient)
         params: dict[str, Any] = {"pIndex": 1, "pSize": 100}
@@ -268,7 +268,7 @@ class AssemblyAPIClient:
             p += 1
 
         # Parse and filter for the requested assembly
-        parsed = self._parse_allname_for_age(all_rows, age)
+        parsed = self._parse_allname_for_assembly(all_rows, assembly)
 
         # Apply client-side filters
         if party:
@@ -285,7 +285,7 @@ class AssemblyAPIClient:
 
     async def get_vote_results(
         self,
-        age: str,
+        assembly: str,
         bill_no: Optional[str] = None,
         bill_name: Optional[str] = None,
         page: int = 1,
@@ -293,7 +293,7 @@ class AssemblyAPIClient:
     ) -> tuple[list[dict], int]:
         """의안별 본회의 표결현황 조회."""
         return await self._get(EP_VOTE, {
-            "AGE": age,
+            "AGE": assembly,
             "BILL_NO": bill_no,
             "BILL_NAME": bill_name,
             "pIndex": page,
@@ -302,7 +302,7 @@ class AssemblyAPIClient:
 
     async def get_bill_review(
         self,
-        age: str,
+        assembly: str,
         bill_no: Optional[str] = None,
         committee: Optional[str] = None,
         page: int = 1,
@@ -310,7 +310,7 @@ class AssemblyAPIClient:
     ) -> tuple[list[dict], int]:
         """의안 처리·심사정보 조회 (위원회 및 본회의 처리 경로)."""
         return await self._get(EP_BILL_REVIEW, {
-            "AGE": age,
+            "AGE": assembly,
             "BILL_NO": bill_no,
             "COMMITTEE_NM": committee,
             "pIndex": page,
@@ -332,7 +332,7 @@ class AssemblyAPIClient:
     async def get_member_votes(
         self,
         bill_id: str,
-        age: str,
+        assembly: str,
         member_name: Optional[str] = None,
         party: Optional[str] = None,
         vote_result: Optional[str] = None,
@@ -343,14 +343,14 @@ class AssemblyAPIClient:
 
         Args:
             bill_id: 의안ID — 필수 (search_bills 결과의 BILL_ID, 예: PRC_...)
-            age: 대수 — 필수 (예: "22")
+            assembly: 대수 — 필수 (예: "22")
             member_name: 의원명 필터 (선택)
             party: 정당명 필터 (선택)
             vote_result: 표결결과 필터 — "찬성" | "반대" | "기권" (선택)
         """
         return await self._get(EP_MEMBER_VOTES, {
             "BILL_ID": bill_id,
-            "AGE": age,
+            "AGE": assembly,
             "HG_NM": member_name,
             "POLY_NM": party,
             "RESULT_VOTE_MOD": vote_result,
@@ -366,9 +366,9 @@ class AssemblyAPIClient:
         page_size: int = 50,
     ) -> tuple[list[dict], int]:
         """위원회 위원 명단 조회. ALLNAMEMBER 기반으로 정확한 역대 데이터 제공."""
-        age = unit_cd.replace("100", "").lstrip("0") if unit_cd.startswith("100") else "22"
+        assembly = unit_cd.replace("100", "").lstrip("0") if unit_cd.startswith("100") else "22"
         return await self.get_member_info(
-            age=age,
+            assembly=assembly,
             committee=committee,
             page=page,
             page_size=page_size,
@@ -376,7 +376,7 @@ class AssemblyAPIClient:
 
     async def get_pending_bills(
         self,
-        age: str,
+        assembly: str,
         bill_name: Optional[str] = None,
         committee: Optional[str] = None,
         proposer: Optional[str] = None,
@@ -385,7 +385,7 @@ class AssemblyAPIClient:
     ) -> tuple[list[dict], int]:
         """계류의안 목록 조회 — 아직 처리되지 않은 현안 법률안."""
         return await self._get(EP_PENDING_BILLS, {
-            "AGE": age,
+            "AGE": assembly,
             "BILL_NAME": bill_name,
             "COMMITTEE": committee,
             "PROPOSER": proposer,
@@ -395,14 +395,14 @@ class AssemblyAPIClient:
 
     async def get_plenary_agenda(
         self,
-        age: str,
+        assembly: str,
         session: Optional[str] = None,
         page: int = 1,
         page_size: int = 10,
     ) -> tuple[list[dict], int]:
         """본회의 부의안건 조회 — 본회의 상정 예정 안건 목록."""
         return await self._get(EP_PLENARY_AGENDA, {
-            "AGE": age,
+            "AGE": assembly,
             "SESS_NO": session,
             "pIndex": page,
             "pSize": page_size,

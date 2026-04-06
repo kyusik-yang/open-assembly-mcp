@@ -36,9 +36,9 @@ UNIT_CD_MAP = {
 }
 
 
-def _unit_cd(age: str) -> str:
-    """Convert assembly age string (e.g., '22') to UNIT_CD (e.g., '100022')."""
-    return UNIT_CD_MAP.get(age, f"100{age.zfill(3)}")
+def _unit_cd(assembly: str) -> str:
+    """Convert assembly string (e.g., '22') to UNIT_CD (e.g., '100022')."""
+    return UNIT_CD_MAP.get(assembly, f"100{assembly.zfill(3)}")
 
 
 # ------------------------------------------------------------------
@@ -105,7 +105,7 @@ async def search_bills(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.search_bills(
-                age=assembly,
+                assembly=assembly,
                 bill_name=bill_name,
                 proposer=proposer,
                 proc_result=proc_result,
@@ -215,7 +215,7 @@ async def get_member_info(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_member_info(
-                age=assembly,
+                assembly=assembly,
                 name=name,
                 party=party,
                 district=district,
@@ -255,8 +255,8 @@ async def get_vote_results(
     This is STEP 1 of the per-member vote analysis workflow.
 
     Typical vote analysis workflow:
-      1. get_vote_results(age=assembly, bill_name=...) → find the bill, note its BILL_ID
-      2. get_member_votes(bill_id=BILL_ID, age=age) → get per-member votes
+      1. get_vote_results(assembly=assembly, bill_name=...) → find the bill, note its BILL_ID
+      2. get_member_votes(bill_id=BILL_ID, assembly=assembly) → get per-member votes
       3. Filter votes by party, or compare party breakdowns
 
     NOT this tool:
@@ -281,7 +281,7 @@ async def get_vote_results(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_vote_results(
-                age=assembly,
+                assembly=assembly,
                 bill_no=bill_no,
                 bill_name=bill_name,
                 page=page,
@@ -345,7 +345,7 @@ async def get_bill_review(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_bill_review(
-                age=assembly,
+                assembly=assembly,
                 bill_no=bill_no,
                 committee=committee,
                 page=page,
@@ -424,8 +424,8 @@ async def get_member_votes(
     This is STEP 2 of the per-member vote analysis workflow.
 
     Typical workflow:
-      1. get_vote_results(age=assembly, bill_name=...) → find BILL_ID
-      2. get_member_votes(bill_id=BILL_ID, age=age) → all ~300 member votes
+      1. get_vote_results(assembly=assembly, bill_name=...) → find BILL_ID
+      2. get_member_votes(bill_id=BILL_ID, assembly=assembly) → all ~300 member votes
       3. Filter by party="더불어민주당" etc. to analyze party discipline
 
     IMPORTANT — requires BILL_ID, not BILL_NO:
@@ -456,7 +456,7 @@ async def get_member_votes(
         try:
             rows, total = await client.get_member_votes(
                 bill_id=bill_id,
-                age=assembly,
+                assembly=assembly,
                 member_name=member_name,
                 party=party,
                 vote_result=vote_result,
@@ -467,7 +467,7 @@ async def get_member_votes(
             msg = (
                 f"전체 {total}명 중 {len(rows)}명 반환 (페이지 {page})."
                 if rows
-                else "표결 기록이 없습니다. BILL_ID(PRC_...)와 AGE를 확인하세요."
+                else "표결 기록이 없습니다. BILL_ID(PRC_...)와 assembly(대수)를 확인하세요."
             )
             return {
                 "votes": rows,
@@ -574,7 +574,7 @@ async def get_pending_bills(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_pending_bills(
-                age=assembly,
+                assembly=assembly,
                 bill_name=bill_name,
                 committee=committee,
                 proposer=proposer,
@@ -631,7 +631,7 @@ async def get_plenary_agenda(
     async with AssemblyAPIClient() as client:
         try:
             rows, total = await client.get_plenary_agenda(
-                age=assembly,
+                assembly=assembly,
                 session=session,
                 page=page,
                 page_size=page_size,
@@ -733,7 +733,7 @@ async def get_bill_summary(assembly: str, bill_no: str) -> dict[str, Any]:
 
         # Fetch detail and review in parallel
         detail_task = client.get_bill_detail(bill_no=bill_no)
-        review_task = client.get_bill_review(age=assembly, bill_no=bill_no, page_size=1)
+        review_task = client.get_bill_review(assembly=assembly, bill_no=bill_no, page_size=1)
         detail_result, review_result = await asyncio.gather(
             detail_task, review_task, return_exceptions=True
         )
@@ -831,8 +831,8 @@ async def analyze_legislator(
         errors: dict[str, str] = {}
 
         # --- Step 1: member info + first bills page in parallel ---
-        member_task = client.get_member_info(age=assembly, name=name, page_size=10)
-        bills_task = client.search_bills(age=assembly, proposer=name, page=1, page_size=100)
+        member_task = client.get_member_info(assembly=assembly, name=name, page_size=10)
+        bills_task = client.search_bills(assembly=assembly, proposer=name, page=1, page_size=100)
 
         member_result, bills_result = await asyncio.gather(
             member_task, bills_task, return_exceptions=True
@@ -874,7 +874,7 @@ async def analyze_legislator(
             while len(all_bills) < bills_total and len(all_bills) < 500:
                 try:
                     more_rows, _ = await client.search_bills(
-                        age=assembly, proposer=name, page=page, page_size=100
+                        assembly=assembly, proposer=name, page=page, page_size=100
                     )
                     if not more_rows:
                         break
@@ -987,7 +987,7 @@ async def get_party_cohesion(
         try:
             rows, _ = await client.get_member_votes(
                 bill_id=bill_id,
-                age=assembly,
+                assembly=assembly,
                 page_size=300,
             )
         except Exception as exc:
@@ -1011,7 +1011,7 @@ async def get_party_cohesion(
                 "dissenters": [],
                 "errors": {},
                 "message": (
-                    "표결 기록이 없습니다. BILL_ID(PRC_...)와 AGE를 확인하세요. "
+                    "표결 기록이 없습니다. BILL_ID(PRC_...)와 assembly(대수)를 확인하세요. "
                     "get_vote_results에서 BILL_ID를 먼저 조회하세요."
                 ),
             }

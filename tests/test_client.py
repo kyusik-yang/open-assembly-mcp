@@ -130,7 +130,7 @@ class TestSearchBills:
             mock_get.return_value = mock_response
 
             async with AssemblyAPIClient() as client:
-                rows, total = await client.search_bills(age="22")
+                rows, total = await client.search_bills(assembly="22")
 
             assert len(rows) == 1
             assert total == 47
@@ -146,7 +146,7 @@ class TestSearchBills:
             mock_get.return_value = mock_response
 
             async with AssemblyAPIClient() as client:
-                rows, total = await client.search_bills(age="22", bill_name="존재하지않는법안")
+                rows, total = await client.search_bills(assembly="22", bill_name="존재하지않는법안")
 
             assert rows == []
             assert total == 0
@@ -179,7 +179,7 @@ class TestSearchBills:
 
             async with AssemblyAPIClient() as client:
                 rows, total = await client.search_bills(
-                    age="22",
+                    assembly="22",
                     propose_dt_from="20240101",
                     propose_dt_to="20241231",
                 )
@@ -223,7 +223,7 @@ class TestGetMemberVotes:
             async with AssemblyAPIClient() as client:
                 rows, total = await client.get_member_votes(
                     bill_id="PRC_T2M6W0F2I1W2T1X7T4K2Q5A9J4P2M5",
-                    age="22",
+                    assembly="22",
                 )
 
         assert len(rows) == 1
@@ -254,7 +254,7 @@ class TestGetMemberVotes:
             async with AssemblyAPIClient() as client:
                 rows, total = await client.get_member_votes(
                     bill_id="PRC_TEST123",
-                    age="22",
+                    assembly="22",
                     vote_result="찬성",
                 )
 
@@ -309,7 +309,7 @@ class TestGetPendingBills:
             mock_get.return_value = mock_response
 
             async with AssemblyAPIClient() as client:
-                rows, total = await client.get_pending_bills(age="22")
+                rows, total = await client.get_pending_bills(assembly="22")
 
         assert len(rows) == 1
         assert total == 8900
@@ -326,7 +326,7 @@ class TestGetPendingBills:
 
             async with AssemblyAPIClient() as client:
                 await client.get_pending_bills(
-                    age="22", committee="법제사법위원회", proposer="홍길동"
+                    assembly="22", committee="법제사법위원회", proposer="홍길동"
                 )
 
         params = mock_get.call_args[1]["params"]
@@ -350,7 +350,7 @@ class TestGetPlenaryAgenda:
             mock_get.return_value = mock_response
 
             async with AssemblyAPIClient() as client:
-                rows, total = await client.get_plenary_agenda(age="22")
+                rows, total = await client.get_plenary_agenda(assembly="22")
 
         assert len(rows) == 1
         assert total == 3
@@ -366,7 +366,7 @@ class TestGetPlenaryAgenda:
             mock_get.return_value = mock_response
 
             async with AssemblyAPIClient() as client:
-                await client.get_plenary_agenda(age="22", session="2")
+                await client.get_plenary_agenda(assembly="22", session="2")
 
         params = mock_get.call_args[1]["params"]
         assert params["AGE"] == "22"
@@ -421,7 +421,7 @@ class TestTimeoutHandling:
 
             async with AssemblyAPIClient() as client:
                 with pytest.raises(ValueError, match="timed out"):
-                    await client.search_bills(age="22")
+                    await client.search_bills(assembly="22")
 
 
 class TestGetMemberInfo:

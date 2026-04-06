@@ -150,7 +150,7 @@ class TestGetMemberInfoTool:
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
             await get_member_info(assembly="22")
 
-        assert mock_client.get_member_info.call_args.kwargs["age"] == "22"
+        assert mock_client.get_member_info.call_args.kwargs["assembly"] == "22"
 
     @pytest.mark.asyncio
     async def test_assembly_16_passed_to_client(self):
@@ -162,7 +162,7 @@ class TestGetMemberInfoTool:
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
             await get_member_info(assembly="16")
 
-        assert mock_client.get_member_info.call_args.kwargs["age"] == "16"
+        assert mock_client.get_member_info.call_args.kwargs["assembly"] == "16"
 
 
 class TestGetBillProposersTool:
@@ -272,7 +272,7 @@ class TestGetMemberVotesTool:
 
         call_kwargs = mock_client.get_member_votes.call_args.kwargs
         assert call_kwargs["bill_id"] == "PRC_TEST123"
-        assert call_kwargs["age"] == "22"
+        assert call_kwargs["assembly"] == "22"
 
     @pytest.mark.asyncio
     async def test_vote_result_filter_passed(self):
