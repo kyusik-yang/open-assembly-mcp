@@ -9,13 +9,13 @@
 
 **MCP server for the Korean National Assembly Open API** ([열린국회정보](https://open.assembly.go.kr)) — query bills, members, vote results, committee composition, pending bills, plenary agenda, per-member vote records, NARS reports, petitions, schedule, and hearings directly from Claude or any MCP-compatible AI client.
 
-![Before vs After](assets/before-after.svg)
-
 ---
 
 ## Showcase
 
 한국어나 영어로 자연스럽게 질문하면 됩니다. Claude가 필요한 툴을 고르고 체인으로 연결합니다.
+
+![Before vs After](assets/before-after.svg)
 
 ---
 

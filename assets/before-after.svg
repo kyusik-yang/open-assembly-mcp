@@ -97,7 +97,7 @@
 
   <!-- Tool call box -->
   <rect x="372" y="150" width="284" height="58" rx="6" fill="#F0EFEc"/>
-  <text x="382" y="167" font-size="10.5" font-family="'SFMono-Regular','Consolas',monospace" fill="#16A34A">✓  search_bills(age='22', keyword='AI')</text>
+  <text x="382" y="167" font-size="10.5" font-family="'SFMono-Regular','Consolas',monospace" fill="#16A34A">✓  search_bills(assembly='22', bill_name='AI')</text>
   <text x="382" y="183" font-size="10.5" font-family="'SFMono-Regular','Consolas',monospace" fill="#9CA3AF">   → 47건 발견</text>
   <text x="382" y="199" font-size="10.5" font-family="'SFMono-Regular','Consolas',monospace" fill="#16A34A">✓  get_bill_proposers()  × 4건</text>
 
