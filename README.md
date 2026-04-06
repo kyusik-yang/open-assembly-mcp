@@ -173,8 +173,8 @@ Claude calls:
 > **"22대 국회에서 법원조직법 개정안 표결에서 각 정당 의원들은 어떻게 투표했나? 당론을 이탈한 의원이 있었나?"**
 
 Claude calls:
-1. `get_vote_results(assembly="22", bill_name="법원조직법")` → finds bill + aggregate counts + BILL_ID
-2. `get_member_votes(bill_id="PRC_H2W6O0K2D1T1Y2B0O5J2K5Q5A8Z0Y3", assembly="22")` → 295 rows, one per member
+1. `get_vote_results(assembly="22", bill_name="법원조직법")` → finds bill + BILL_ID
+2. `get_party_cohesion(bill_id="PRC_H2W6O0K2D1T1Y2B0O5J2K5Q5A8Z0Y3", assembly="22")` → Rice index by party + dissenters
 
 **Sample output (real data, BILL_NO 2216843):**
 ```
@@ -182,15 +182,15 @@ Claude calls:
 전체: 찬성 173 / 반대 73 / 기권 1
 
 정당별 표결:
-  더불어민주당  찬성 152 / 기권 1  / 불참 9
-  국민의힘     반대  70 / 불참 36
-  조국혁신당   찬성  12
-  진보당       찬성   4
-  개혁신당     반대   2 / 불참 1
+  더불어민주당  찬성 152 / 기권 1  / 불참 9   Rice index: 0.993
+  국민의힘     반대  70 / 불참 36             Rice index: 1.000
+  조국혁신당   찬성  12                        Rice index: 1.000
+  진보당       찬성   4                        Rice index: 1.000
+  개혁신당     반대   2 / 불참 1               Rice index: 1.000
   무소속       찬성   3 / 불참 3
 
 당론 이탈:
-  민주당 기권 1명: 이학영 (경기 군포시)
+  이학영 (더불어민주당 | 경기 군포시) — 기권
 ```
 
 ---
@@ -449,10 +449,42 @@ With MCP:    ask Claude in one sentence → tools chain automatically → result
 | Currently active legislation in a policy area | `get_pending_bills` (committee/keyword filter) |
 | Upcoming plenary votes | `get_plenary_agenda` |
 | Majority-building analysis for a passed bill | `get_bill_proposers` + `get_member_votes` |
-| Access non-core APIs (petitions, schedules, NARS…) | `discover_apis` → `query_assembly` |
+| Confirmation hearing list by nominee or committee | **`search_hearings`** (hearing_type="confirmation") |
+| NARS research reports on a policy topic | **`search_nars_reports`** (keyword) |
+| Petitions received in a given assembly | **`search_petitions`** (assembly, include_closed) |
 | Bill propose-reason text analysis | `search_bills` (this MCP) + [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) for texts |
 | Committee oversight speech patterns | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) speeches |
-| Confirmation hearing analysis | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) with hearing_type filter |
+| Confirmation hearing Q&A transcripts | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) with hearing_type filter |
+
+---
+
+## Research-first design
+
+The only other MCP server for 열린국회 API is [hollobit/assembly-api-mcp](https://github.com/hollobit/assembly-api-mcp) (TypeScript, MIT). That project offers a clean universal query interface — call any of the 276+ endpoints by code, get back raw rows. This project extends that model with domain-specific tools built around the actual structure of legislative research.
+
+| | hollobit/assembly-api-mcp | **open-assembly-mcp** |
+|--|--|--|
+| Language | TypeScript | Python |
+| Dedicated tools | None (universal query only) | 14 dedicated + 4 expansion + 2 universal |
+| Research metrics | None | Rice index, career stats built-in |
+| Party cohesion | Manual aggregation from raw rows | `get_party_cohesion` — one call |
+| Legislator profile | Multi-step manual | `analyze_legislator` — one call, 500-bill auto-pagination |
+| Bill timeline | Manual chaining | `get_bill_summary` — parallel sub-calls |
+| Historical accuracy | Current assembly only | `ALLNAMEMBER` — correct party/district per assembly |
+| BILL_ID vs BILL_NO | Not distinguished | Explicit in all relevant tools |
+| Test coverage | None | 106 pytest |
+
+### What this means in practice
+
+**`get_party_cohesion`** takes a BILL_ID and returns the full picture for that vote: per-party yes/no/abstain counts, Rice index, dominant position, and a named list of individual dissenters with their vote type (`opposite` or `abstain`). The output is structured for immediate use — no post-processing needed to compute party discipline metrics.
+
+**`analyze_legislator`** returns a complete legislative career in one call: member metadata (party, district, committee), all sponsored bills up to 500 (auto-paginated), and activity breakdowns by processing result, committee, and year. The `by_year` and `by_committee` fields eliminate several manual joins when constructing legislator activity panels.
+
+**`get_bill_summary`** runs four sub-calls concurrently (bill detail, review timeline, co-sponsors, committee meetings) and returns them as a single structured response. Partial failures are isolated in `errors{}` rather than crashing the whole response — useful when some endpoints return empty data for older assemblies.
+
+**`get_member_info` with ALLNAMEMBER** returns party, district, and committee assignment *as of the requested assembly*, not the current one. This matters for panel data across multiple assemblies: a member who switched parties or changed districts will show correct affiliation for each period separately.
+
+The universal-access pair (`discover_apis` + `query_assembly`) was directly inspired by hollobit's design and covers the remaining 250+ endpoints not yet wrapped in dedicated tools. See [CREDITS.md](CREDITS.md).
 
 ---
 
@@ -477,11 +509,13 @@ ASSEMBLY_API_KEY=your-key uv run python -m data_go_mcp.open_assembly.server
 
 ## Acknowledgments
 
-The `discover_apis` and `query_assembly` tools were inspired by the universal-access
-pattern in [hollobit/assembly-api-mcp](https://github.com/hollobit/assembly-api-mcp)
-(MIT License), with explicit permission from the author. The endpoint registry structure
-and raw-fallback design are adapted from that project; all implementation is original Python.
+`discover_apis`, `query_assembly`, the endpoint registry structure, and the raw-fallback
+design are adapted from [hollobit/assembly-api-mcp](https://github.com/hollobit/assembly-api-mcp)
+(MIT License), with explicit permission from the author. All implementation is original Python.
 See [CREDITS.md](CREDITS.md) for a detailed breakdown.
+
+The server architecture and packaging conventions follow
+[Koomook/data-go-mcp-servers](https://github.com/Koomook/data-go-mcp-servers) (Apache 2.0).
 
 ---
 
