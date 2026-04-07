@@ -15,15 +15,17 @@
 
 한국어나 영어로 자연스럽게 질문하면 됩니다. Claude가 필요한 툴을 고르고 체인으로 연결합니다.
 
+![Demo animation](assets/demo-animation.gif)
+
 ![Demo: party-line vote analysis](assets/demo-voting.svg)
 
 ![Before vs After](assets/before-after.svg)
 
 ---
 
-### 1 — 당론 분석 + Rice index
+### 1 — 당론 분석
 
-> **"22대 법원조직법 표결, 정당별 Rice index와 이탈표 알려줘"**
+> **"22대 법원조직법 표결, 정당별 찬반 집계와 이탈표 알려줘"**
 
 Claude calls `get_vote_results` → `get_party_cohesion`
 
@@ -32,11 +34,11 @@ Claude calls `get_vote_results` → `get_party_cohesion`
 전체: 찬성 173 / 반대 73 / 기권 1
 
 정당별 표결:
-  더불어민주당  찬성 152 / 기권 1 / 불참 9    Rice index 0.993
-  국민의힘     반대  70 / 불참 36              Rice index 1.000
-  조국혁신당   찬성  12                         Rice index 1.000
-  진보당       찬성   4                         Rice index 1.000
-  개혁신당     반대   2 / 불참 1                Rice index 1.000
+  더불어민주당  찬성 152 / 기권 1 / 불참 9
+  국민의힘     반대  70 / 불참 36
+  조국혁신당   찬성  12
+  진보당       찬성   4
+  개혁신당     반대   2 / 불참 1
   무소속       찬성   3 / 불참 3
 
 이탈표:
@@ -315,7 +317,7 @@ All tools return `total_count` and `has_more` for transparent pagination.
 | Tool | Key parameters | Returns |
 |---|---|---|
 | `analyze_legislator` | `name`, `assembly` | `member{}`, `bills{total, by_result, by_committee, by_year, recent, all}` |
-| `get_party_cohesion` | `bill_id` (BILL_ID), `assembly` | `by_party{}` with Rice index, `dissenters[]` |
+| `get_party_cohesion` | `bill_id` (BILL_ID), `assembly` | `by_party{}` with per-party vote counts + dominant position, `dissenters[]` |
 
 **API expansion tools** (NARS, petitions, schedule, hearings — new in v0.6.0):
 
@@ -384,7 +386,7 @@ https://open.assembly.go.kr/portal/data/service/selectAPIServicePage.do
 | `get_bill_committee_review` | 16th–22nd | Committee meetings for a specific bill |
 | `get_bill_summary` | 16th–22nd | **Convenience** — chains detail + review + proposers + committee meetings in one call |
 | `analyze_legislator` | 16th–22nd | **Chain** — member profile + all sponsored bills + career stats (by_result, by_year, by_committee) |
-| `get_party_cohesion` | 18th–22nd recommended | **Research** — per-party Rice index + dissenters; requires BILL_ID from get_vote_results |
+| `get_party_cohesion` | 18th–22nd recommended | **Research** — per-party vote breakdown + dissenters; requires BILL_ID from get_vote_results |
 | `search_nars_reports` | All | NARS research reports by keyword or date range |
 | `search_petitions` | 16th–22nd | Pending or all-time petitions; `include_closed=True` for closed petitions |
 | `get_schedule` | All | Assembly schedule — all, plenary-only, or committee-specific |
@@ -455,7 +457,7 @@ With MCP:    ask Claude in one sentence → tools chain automatically → result
 |---|---|
 | Co-sponsorship network for a policy domain | `search_bills` + `get_bill_proposers` |
 | Party-line discipline on a specific vote | `get_vote_results` + **`get_party_cohesion`** |
-| Rice index + who defected | **`get_party_cohesion`** → `by_party[party]["rice_index"]` + `dissenters[]` |
+| Per-party vote breakdown + dissenters | **`get_party_cohesion`** → `by_party[party]` + `dissenters[]` |
 | Cross-party voting coalitions | `get_vote_results` + `get_member_votes` |
 | Full legislative career of a single member | **`analyze_legislator`** (one call) |
 | Legislator activity by year or committee | **`analyze_legislator`** → `bills.by_year`, `bills.by_committee` |
@@ -481,7 +483,7 @@ The only other MCP server for 열린국회 API is [hollobit/assembly-api-mcp](ht
 |--|--|--|
 | Language | TypeScript | Python |
 | Dedicated tools | None (universal query only) | 14 dedicated + 4 expansion + 2 universal |
-| Research metrics | None | Rice index, career stats built-in |
+| Research metrics | None | Party cohesion, career stats built-in |
 | Party cohesion | Manual aggregation from raw rows | `get_party_cohesion` — one call |
 | Legislator profile | Multi-step manual | `analyze_legislator` — one call, 500-bill auto-pagination |
 | Bill timeline | Manual chaining | `get_bill_summary` — parallel sub-calls |
@@ -491,7 +493,7 @@ The only other MCP server for 열린국회 API is [hollobit/assembly-api-mcp](ht
 
 ### What this means in practice
 
-**`get_party_cohesion`** takes a BILL_ID and returns the full picture for that vote: per-party yes/no/abstain counts, Rice index, dominant position, and a named list of individual dissenters with their vote type (`opposite` or `abstain`). The output is structured for immediate use — no post-processing needed to compute party discipline metrics.
+**`get_party_cohesion`** takes a BILL_ID and returns the full picture for that vote: per-party yes/no/abstain counts, dominant position, and a named list of individual dissenters with their vote type (`opposite` or `abstain`). The output is structured for immediate use — no post-processing needed.
 
 **`analyze_legislator`** returns a complete legislative career in one call: member metadata (party, district, committee), all sponsored bills up to 500 (auto-paginated), and activity breakdowns by processing result, committee, and year. The `by_year` and `by_committee` fields eliminate several manual joins when constructing legislator activity panels.
 
@@ -547,7 +549,7 @@ The server architecture and packaging conventions follow
 
 ### v0.5.0 (2026-04)
 - Added `analyze_legislator` chain tool: one-shot legislator profile — member info + all sponsored bills (up to 500, paginated) + career statistics (by_result, by_committee, by_year, recent 5)
-- Added `get_party_cohesion` research tool: per-party vote aggregation, Rice index, dominant position, individual dissenters (type: opposite / abstain); handles all-abstain edge case (rice_index = None)
+- Added `get_party_cohesion` research tool: per-party vote aggregation, dominant position, individual dissenters (type: opposite / abstain); handles all-abstain edge case gracefully
 - Both new tools handle parallel sub-calls, ambiguous member names, pagination, and graceful error isolation
 
 ### v0.4.0 (2026-04)
