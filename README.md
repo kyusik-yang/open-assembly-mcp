@@ -15,6 +15,8 @@
 
 한국어나 영어로 자연스럽게 질문하면 됩니다. Claude가 필요한 툴을 고르고 체인으로 연결합니다.
 
+![Demo: party-line vote analysis](assets/demo-voting.svg)
+
 ![Before vs After](assets/before-after.svg)
 
 ---
