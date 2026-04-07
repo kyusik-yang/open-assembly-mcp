@@ -17,8 +17,6 @@
 
 ![Demo animation](assets/demo-animation.gif)
 
-![Demo: party-line vote analysis](assets/demo-voting.svg)
-
 ![Before vs After](assets/before-after.svg)
 
 ---
