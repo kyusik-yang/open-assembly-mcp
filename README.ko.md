@@ -25,8 +25,21 @@
 
 사용 중인 Claude 인터페이스에 따라 세 가지 방법으로 연결할 수 있습니다.
 
-**공통 준비:** [open.assembly.go.kr](https://open.assembly.go.kr)에서 무료 API 키 발급
-→ 회원가입 → 마이페이지 → API 키 발급
+**공통 준비:**
+
+1. **`uv` 설치** (아래 모든 설치 방법에서 사용하는 `uvx` 명령어가 포함되어 있습니다):
+
+   ```bash
+   # macOS / Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Windows (PowerShell)
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+   확인: `uvx --version` 명령이 버전을 출력해야 합니다. `command not found`가 나오면 새 터미널을 열어 PATH를 갱신하세요.
+
+2. **API 키 발급**: [open.assembly.go.kr](https://open.assembly.go.kr)에서 회원가입 → 마이페이지 → API 키 발급
 
 ---
 
@@ -357,6 +370,28 @@ uvx --reinstall open-assembly-mcp --setup
 ```
 
 Claude Desktop config에 `open-assembly-mcp@latest`로 설정해두면 항상 최신 버전으로 실행됩니다.
+
+---
+
+## 트러블슈팅
+
+**`uvx: command not found`**
+`uv`가 아직 설치되지 않았거나, 새 PATH가 적용되지 않았습니다. 위 [공통 준비](#claude-연결-방법)의 설치 명령을 실행한 뒤 새 터미널을 열거나 `source ~/.zshrc` (또는 `source ~/.bashrc`)로 PATH를 갱신하세요.
+
+**Claude Desktop에서 Assembly 도구가 안 보임**
+1. 설정 파일 경로 확인: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) / `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
+2. JSON 최상위에 `mcpServers` 키가 있는지 확인 (`preferences` 안에 들어가 있으면 안 됨)
+3. Claude Desktop을 완전히 종료(macOS는 ⌘Q) 후 재시작. 창만 닫으면 MCP 서버가 다시 로드되지 않습니다.
+4. 실행 에러 확인: `~/Library/Logs/Claude/` (macOS)
+
+**모든 호출에 `401 Unauthorized` 또는 빈 결과**
+`ASSEMBLY_API_KEY`가 누락됐거나 잘못된 키입니다. `uvx open-assembly-mcp --setup`을 다시 실행하면 config 작성 전에 라이브 API로 키를 검증합니다.
+
+**Claude Code에서 `claude mcp list`에 open-assembly가 안 뜸**
+다른 scope에 등록됐을 수 있습니다. `--scope user`로 다시 등록하면 모든 프로젝트에서 사용 가능합니다. 또는 처음 등록한 프로젝트 디렉토리에서 다시 시도하세요.
+
+**캐시된 구버전이 계속 실행됨**
+`uvx`는 패키지명으로 캐싱합니다. `uvx --reinstall open-assembly-mcp@latest --setup`으로 강제 갱신하세요.
 
 ---
 

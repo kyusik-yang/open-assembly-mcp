@@ -96,8 +96,22 @@ Claude calls `get_bill_summary(assembly="22", bill_no="2206772")` — 상세정�
 
 There are three ways to use the Assembly tools, depending on which Claude interface you use.
 
-**Before any setup:** Get a free API key at [open.assembly.go.kr](https://open.assembly.go.kr)
-→ Sign up → 마이페이지 → API 키 발급
+**Before any setup:**
+
+1. **Install `uv`** (provides the `uvx` runner used in every install path below):
+
+   ```bash
+   # macOS / Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Windows (PowerShell)
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+   Verify: `uvx --version` should print a version string. If you see `command not found`, open a new terminal so the PATH update takes effect.
+
+2. **Get a free API key** at [open.assembly.go.kr](https://open.assembly.go.kr)
+   → Sign up → 마이페이지 → API 키 발급
 
 ---
 
@@ -434,6 +448,28 @@ uvx --reinstall open-assembly-mcp --setup
 ```
 
 To update the server used by Claude Desktop, edit your config and change the `args` line to pin the new version, or leave it as `open-assembly-mcp@latest` to always pull the latest on startup.
+
+---
+
+## Troubleshooting
+
+**`uvx: command not found`**
+You haven't installed `uv` yet, or the new PATH hasn't been picked up. Run the install command in the [Before any setup](#connecting-to-claude) section, then open a fresh terminal (or `source ~/.zshrc` / `source ~/.bashrc`).
+
+**Claude Desktop doesn't show the Assembly tools**
+1. Check the config file path is correct: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows).
+2. Make sure the JSON has a top-level `mcpServers` key (not nested under `preferences`).
+3. Fully quit Claude Desktop (⌘Q on macOS) and reopen. A normal window close does not reload MCP servers.
+4. View the Claude Desktop log to see launch errors: `~/Library/Logs/Claude/` on macOS.
+
+**`401 Unauthorized` or empty results on every call**
+Your `ASSEMBLY_API_KEY` is missing or wrong. Verify by running `uvx open-assembly-mcp --setup` again — it validates the key against the live API before writing the config.
+
+**Claude Code: `claude mcp list` doesn't show open-assembly**
+You probably added it under a different scope. Re-run `claude mcp add` with `--scope user` so it's available across projects, or `cd` into the project where you used the default local scope.
+
+**Stale cached version**
+`uvx` caches packages by name. Force a refresh with `uvx --reinstall open-assembly-mcp@latest --setup`.
 
 ---
 
