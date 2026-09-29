@@ -11,7 +11,7 @@ Claude Code와 함께 작업하는 방법도 포함합니다.
 open-assembly-mcp/
 ├── data_go_mcp/open_assembly/
 │   ├── client.py        # 열린국회정보 API httpx 클라이언트 (엔드포인트, 파싱)
-│   ├── server.py        # FastMCP 서버 + 도구 정의 (12개 @mcp.tool)
+│   ├── server.py        # MCPServer(MCP SDK 2.x) 서버 + 도구 정의 (20개 @mcp.tool)
 │   └── setup_cli.py     # --setup 위저드 (Claude Desktop config 자동 설정)
 ├── tests/
 │   ├── test_client.py   # API 응답 파싱 단위 테스트 (mock)

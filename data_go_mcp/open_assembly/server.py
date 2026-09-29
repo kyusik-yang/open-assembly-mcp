@@ -4,9 +4,10 @@ import asyncio
 import os
 import sys
 import logging
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from typing import Any, Optional
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from dotenv import load_dotenv
 
 from .client import (
@@ -23,7 +24,12 @@ from .client import (
 
 load_dotenv()
 
-mcp = FastMCP("Korean National Assembly Open API")
+try:
+    _VERSION = _pkg_version("open-assembly-mcp")
+except PackageNotFoundError:  # running from a source tree that is not installed
+    _VERSION = ""
+
+mcp = MCPServer("Korean National Assembly Open API", version=_VERSION)
 
 UNIT_CD_MAP = {
     "22": "100022",
