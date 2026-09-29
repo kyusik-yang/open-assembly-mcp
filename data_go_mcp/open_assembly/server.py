@@ -1402,7 +1402,7 @@ async def search_hearings(
         Use committee to filter by committee.
 
     Research use case: For analysis of confirmation hearings and political appointments,
-    combine with the kr-hearings-data package (9.9M speeches, 7.9M dyads) which
+    combine with the kr-hearings-data package (15.1M speaker turns, 11.3M dyads) which
     provides full transcript-level data. This tool returns hearing metadata only.
 
     Note: Parameter names are based on the API pattern and hollobit/assembly-api-mcp
