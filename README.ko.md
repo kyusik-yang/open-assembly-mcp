@@ -327,8 +327,16 @@ Claude 호출:
 | `get_plenary_agenda` | 22대 권장 | 본회의 상정 예정 안건 목록 |
 | `get_bill_committee_review` | 16~22대 | 특정 의안의 위원회 심사 회의정보 (BILL_ID 필요) |
 | `get_bill_summary` | 16~22대 | **편의 도구** — 상세정보+처리타임라인+공동발의자+위원회 회의를 한 번에 조회 |
+| `analyze_legislator` | 16~22대 | **연쇄 도구** — 의원 정보 + 대표발의 법안 전체 + 경력 통계 |
+| `get_party_cohesion` | 18~22대 권장 | **연구 도구** — 정당별 표결 분포와 이탈 의원 (`get_vote_results`의 BILL_ID 필요) |
+| `search_nars_reports` | 전체 | 국회입법조사처 발간자료 (제목 키워드, 작성일 범위, 자료 구분) |
+| `search_petitions` | 16~22대 | 계류 청원 또는 전체 청원 (`include_closed=True`면 종결 청원 포함) |
+| `get_schedule` | 전체 | 국회 일정 (전체, 본회의, 위원회별) |
+| `search_hearings` | 16~22대 | 인사청문회·공청회 회의 목록과 회의록 PDF (후보자명·위원회로 검색) |
+| `discover_apis` | 전체 | 검증된 엔드포인트 목록 검색 (`query_assembly`를 쓰기 전에 사용) |
+| `query_assembly` | 전체 | 범용 호출 — 276개 이상의 엔드포인트를 직접 호출 |
 
-**Open API 미제공 항목**: 회의록, 청원, 법안 전문.
+**도구가 제공하지 않는 항목**: 회의록 전문, 법안 전문. 청원은 `search_petitions`로, 청문회 회의록 PDF 링크는 `search_hearings`로 조회할 수 있습니다.
 법안 제안이유 텍스트와 위원회 회의록은 [관련 데이터 패키지](#관련-데이터-패키지) 참조.
 공식 의안 페이지는 `get_bill_detail` → `LINK_URL`로 확인 가능.
 

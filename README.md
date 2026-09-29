@@ -399,14 +399,14 @@ https://open.assembly.go.kr/portal/data/service/selectAPIServicePage.do
 | `get_bill_summary` | 16th–22nd | **Convenience** — chains detail + review + proposers + committee meetings in one call |
 | `analyze_legislator` | 16th–22nd | **Chain** — member profile + all sponsored bills + career stats (by_result, by_year, by_committee) |
 | `get_party_cohesion` | 18th–22nd recommended | **Research** — per-party vote breakdown + dissenters; requires BILL_ID from get_vote_results |
-| `search_nars_reports` | All | NARS research reports by keyword or date range |
+| `search_nars_reports` | All | NARS publications by title keyword, writing-date range or series |
 | `search_petitions` | 16th–22nd | Pending or all-time petitions; `include_closed=True` for closed petitions |
 | `get_schedule` | All | Assembly schedule — all, plenary-only, or committee-specific |
-| `search_hearings` | 16th–22nd | Personnel confirmation hearings or public hearings |
+| `search_hearings` | 16th–22nd | Confirmation or public hearing meetings with minutes PDFs; search by nominee or committee |
 | `discover_apis` | All | Searches the verified endpoint registry; use before `query_assembly` |
 | `query_assembly` | All | Universal fallback — calls any of the 276+ endpoints directly |
 
-**Not available via Open API**: transcripts, citizen petitions, bill full text.
+**Not covered by the tools**: full meeting transcripts and bill full text. Petition records come from `search_petitions`, and `search_hearings` links each hearing's minutes as a PDF.
 For bill texts and transcripts, see [Related Data Packages](#related-data-packages) below.
 For official bill pages, use `get_bill_detail` → `LINK_URL`.
 
@@ -571,6 +571,9 @@ The server architecture and packaging conventions follow
 ---
 
 ## Changelog
+
+### v0.7.2 (2026-09)
+- Documentation only. The READMEs no longer say that petitions are unavailable, since `search_petitions` returns them. The Korean README lists all 20 tools.
 
 ### v0.7.1 (2026-09)
 - The API key no longer reaches logs or tool results. httpx logged every request URL, key included, at INFO level to the server log that MCP hosts keep, and error messages are now scrubbed of the key.
