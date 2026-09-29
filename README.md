@@ -572,6 +572,11 @@ The server architecture and packaging conventions follow
 
 ## Changelog
 
+### v0.6.1 (2026-09)
+- Pins `mcp` below 2.0. The MCP Python SDK 2.0 (July 2026) removed `mcp.server.fastmcp`, so a fresh install of 0.6.0 pulled `mcp` 2.x and the server failed to start.
+- Internal parameter names use `assembly` instead of `age` throughout the client and server. The tool parameters are unchanged, and the tool descriptions now match them.
+- README: the related-packages table reflects kna 0.8.1, kr-hearings-data v10 and minister-data v2.0.0. The README also has a Showcase section and a uv troubleshooting note.
+
 ### v0.6.0 (2026-04)
 - Added `search_nars_reports`: search 국회입법조사처 research reports by keyword or date range
 - Added `search_petitions`: query pending or all-time petitions by assembly and keyword; automatically routes to the correct endpoint (`include_closed` toggle)
