@@ -186,18 +186,19 @@ ENDPOINT_REGISTRY: dict[str, dict] = {
     # NARS / 국회입법조사처
     # ================================================================
 
-    "naaborihbkorknasp": {
-        "name": "국회입법조사처 보고서",
-        "name_en": "NARS Research Reports (National Assembly Research Service)",
+    "ALLNARSPBLM": {
+        "name": "국회입법조사처 제공 자료 통합 API",
+        "name_en": "NARS Publications (National Assembly Research Service, integrated)",
         "category": "nars",
         "mcp_tool": "search_nars_reports",
-        "key_params": ["TITL_NM", "PUBLG_STRT_DT", "PUBLG_END_DT"],
+        "key_params": ["MTR_TTL", "MTR_DIV"],
         "assembly_range": "All (not assembly-specific)",
         "notes": (
-            "입법조사처보고서, 이슈와논점, 외국법률동향과분석 등 NARS 발행 보고서 검색. "
-            "Date params in YYYYMMDD format. Code sourced from hollobit/assembly-api-mcp."
+            "NARS 현안분석, 이슈와 논점, 입법·정책보고서, 외국입법 동향과 분석 등 발간자료. "
+            "Outputs MTR_DIV, MTR_TTL, WRT_DT (YYYY-MM-DD), LINK_URL. No date parameters. "
+            "Checked against the Open API spec on 2026-09-29."
         ),
-        "verified": False,  # code confirmed, parameter names best-known
+        "verified": True,
     },
 
     # ================================================================
@@ -316,31 +317,47 @@ ENDPOINT_REGISTRY: dict[str, dict] = {
     # ================================================================
 
     "VCONFCFRMCONFLIST": {
-        "name": "인사청문회 목록",
-        "name_en": "Personnel Confirmation Hearing List",
+        "name": "인사청문회 회의록",
+        "name_en": "Confirmation Hearing Minutes (meeting list)",
         "category": "hearings",
         "mcp_tool": "search_hearings",
-        "key_params": ["AGE", "NAAS_NM"],
+        "key_params": ["ERACO", "CMIT_CD"],
         "assembly_range": "16th-22nd",
         "notes": (
-            "장관급 이상 인사청문회 목록. 후보자명 또는 위원회로 필터 가능. "
-            "Code sourced from hollobit/assembly-api-mcp."
+            "인사청문회 회의 목록과 회의록 PDF 링크. ERACO is required, e.g. ERACO=제22대. "
+            "Outputs CONF_ID, SESS, DGR, CONF_DT, CONF_KND, CMIT_CD, CMIT_NM, DOWN_URL. "
+            "Checked against the Open API spec on 2026-09-29."
         ),
-        "verified": False,
+        "verified": True,
+    },
+    "nrvsawtaauyihadij": {
+        "name": "인사청문회 (인사청문 요청안)",
+        "name_en": "Confirmation Hearing Requests (nominees)",
+        "category": "hearings",
+        "mcp_tool": "search_hearings",
+        "key_params": ["AGE", "APPOINT_NAME", "APPOINT_GRADE"],
+        "assembly_range": "Varies",
+        "notes": (
+            "후보자별 인사청문 요청안: APPOINT_GRADE(직위), APPOINT_NAME(후보자명), "
+            "CURR_COMMITTEE, PROPOSE_DT, PROC_DT, PROC_RESULT. Nominees heard by a special "
+            "committee (e.g. 국무총리) are not listed here. Checked on 2026-09-29."
+        ),
+        "verified": True,
     },
 
     "VCONFPHCONFLIST": {
-        "name": "공청회 목록",
-        "name_en": "Public Hearing List",
+        "name": "공청회 회의록",
+        "name_en": "Public Hearing Minutes (meeting list)",
         "category": "hearings",
         "mcp_tool": "search_hearings",
-        "key_params": ["AGE", "CMIT_NM"],
+        "key_params": ["ERACO", "CMIT_CD"],
         "assembly_range": "16th-22nd",
         "notes": (
-            "입법 공청회 목록 (51 records). 위원회별 필터 가능. "
-            "Code sourced from hollobit/assembly-api-mcp."
+            "공청회 회의 목록과 회의록 PDF 링크. ERACO is required, e.g. ERACO=제22대. "
+            "Outputs CONF_ID, SESS, DGR, CONF_DT, CONF_KND, CMIT_CD, CMIT_NM, DOWN_URL. "
+            "Checked against the Open API spec on 2026-09-29."
         ),
-        "verified": False,
+        "verified": True,
     },
 
     # ================================================================

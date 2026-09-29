@@ -20,6 +20,7 @@ from .client import (
     EP_SCHEDULE_COMMITTEE,
     EP_HEARING_CONFIRM,
     EP_HEARING_PUBLIC,
+    EP_HEARING_REQUESTS,
 )
 
 load_dotenv()
@@ -1114,6 +1115,7 @@ async def search_nars_reports(
     keyword: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
+    report_type: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
 ) -> dict[str, Any]:
@@ -1121,42 +1123,68 @@ async def search_nars_reports(
     국회입법조사처(NARS) 보고서를 검색합니다.
 
     Search publications from the National Assembly Research Service (NARS / 국회입법조사처):
-    research reports (입법조사처보고서), issue briefs (이슈와논점), foreign law trends
-    (외국법률동향과분석), and regular reports (정기보고서).
+    NARS 현안분석, 이슈와 논점, 입법·정책보고서, 외국입법 동향과 분석 and other series,
+    through the integrated NARS endpoint ALLNARSPBLM.
 
     NARS reports provide authoritative background on policy issues — useful for
     understanding the legislative context around any bill or policy domain.
 
-    Note: This tool uses endpoint naaborihbkorknasp. Parameter names are based on
-    the open.assembly.go.kr API pattern and hollobit/assembly-api-mcp source review.
-    If the keyword filter does not work as expected, try query_assembly with
-    discover_apis(keyword="NARS") to inspect the raw response schema.
-
     Args:
         keyword: 보고서 제목 키워드 (선택, 예: "인공지능", "복지", "조세")
-        date_from: 발행일 시작 (선택, YYYYMMDD 형식, 예: "20240101")
-        date_to: 발행일 종료 (선택, YYYYMMDD 형식, 예: "20241231")
+        date_from: 작성일 시작 (선택, YYYYMMDD 또는 YYYY-MM-DD, 예: "20240101")
+        date_to: 작성일 종료 (선택, YYYYMMDD 또는 YYYY-MM-DD, 예: "20241231")
+        report_type: 발간자료구분 (선택, 예: "NARS 현안분석", "이슈와 논점", "외국입법")
         page: 페이지 번호 (기본값: 1)
         page_size: 페이지당 결과수 (기본값: 10, 최대: 100)
 
     Returns:
-        reports: 보고서 목록 — 각 항목에 제목, 발행일, 저자, 보고서 유형 등 포함
+        reports: 보고서 목록 — MTR_DIV(발간자료구분), MTR_TTL(제목), WRT_DT(작성일), LINK_URL
         count: 이번 페이지 반환 건수
-        total_count: 전체 건수
+        total_count: 전체 건수 (날짜 조건을 적용한 뒤의 건수)
         has_more: True이면 page+1로 재호출
         raw_response: 비표준 응답 형식일 때 전체 JSON
     """
-    params: dict[str, Any] = {"pIndex": page, "pSize": page_size}
+    params: dict[str, Any] = {}
     if keyword:
-        params["TITL_NM"] = keyword
-    if date_from:
-        params["PUBLG_STRT_DT"] = date_from
-    if date_to:
-        params["PUBLG_END_DT"] = date_to
+        params["MTR_TTL"] = keyword
+    if report_type:
+        params["MTR_DIV"] = report_type
+
+    def _ymd(value: Optional[str]) -> Optional[str]:
+        if not value:
+            return None
+        digits = value.replace("-", "")
+        return f"{digits[:4]}-{digits[4:6]}-{digits[6:8]}" if len(digits) == 8 else value
+
+    lo, hi = _ymd(date_from), _ymd(date_to)
 
     async with AssemblyAPIClient() as client:
         try:
-            rows, total, raw = await client.query_endpoint(EP_NARS_REPORTS, params)
+            if lo or hi:
+                # The endpoint has no date parameters: fetch every match and filter by WRT_DT
+                rows, fetched, total, raw = [], 0, None, None
+                p_index = 1
+                while total is None or fetched < total:
+                    batch, total, raw = await client.query_endpoint(
+                        EP_NARS_REPORTS, {**params, "pIndex": p_index, "pSize": 1000}
+                    )
+                    if raw is not None or not batch:
+                        break
+                    rows.extend(batch)
+                    fetched += len(batch)
+                    p_index += 1
+                if raw is None:
+                    rows = [
+                        r for r in rows
+                        if (not lo or str(r.get("WRT_DT") or "") >= lo)
+                        and (not hi or str(r.get("WRT_DT") or "") <= hi)
+                    ]
+                    total = len(rows)
+                    rows = rows[(page - 1) * page_size: page * page_size]
+            else:
+                rows, total, raw = await client.query_endpoint(
+                    EP_NARS_REPORTS, {**params, "pIndex": page, "pSize": page_size}
+                )
 
             if raw is not None:
                 return {
@@ -1400,46 +1428,46 @@ async def search_hearings(
     국회 인사청문회 및 공청회 목록을 조회합니다.
 
     Query National Assembly confirmation hearings (인사청문회) or public hearings (공청회).
+    Each hearing row is one meeting with its minutes: CONF_ID, SESS(회기), DGR(차수),
+    CONF_DT(회의일자), CONF_KND(회의종류), CMIT_NM(위원회명) and DOWN_URL (minutes PDF).
 
     Hearing types:
       - "confirmation": 인사청문회 — personnel confirmation hearings for cabinet nominees,
-        agency heads, and other senior appointees. Use nominee_name to filter by candidate.
+        agency heads, justices and other senior appointees.
       - "public": 공청회 — legislative public hearings for citizen input on bills.
-        Use committee to filter by committee.
+
+    nominee_name (confirmation only) searches two sources:
+      - hearings: meetings of a special hearing committee whose name carries the nominee
+        (e.g. 국무총리(김민석)임명동의에관한인사청문특별위원회);
+      - nominations: 인사청문 요청안 rows (position, nominee, committee, dates, result)
+        for nominees heard in a standing committee, such as ministers.
 
     Research use case: For analysis of confirmation hearings and political appointments,
     combine with the kr-hearings-data package (15.1M speaker turns, 11.3M dyads) which
     provides full transcript-level data. This tool returns hearing metadata only.
 
-    Note: Parameter names are based on the API pattern and hollobit/assembly-api-mcp
-    source review. If nominee_name filtering does not work, use query_assembly directly.
-
     Args:
         assembly: 대수 — 필수 (예: "22")
         hearing_type: 청문회 유형 — "confirmation" 인사청문회 (기본값) | "public" 공청회
-        nominee_name: 후보자 이름 필터 (선택, hearing_type="confirmation"일 때 사용,
-                      예: "홍길동")
-        committee: 위원회명 필터 (선택, 예: "법제사법위원회")
+        nominee_name: 후보자 이름 (선택, hearing_type="confirmation"일 때 사용, 예: "김민석")
+        committee: 위원회명 일부 (선택, 예: "법제사법위원회")
         page: 페이지 번호 (기본값: 1)
         page_size: 페이지당 결과수 (기본값: 10)
 
     Returns:
-        hearings: 청문회 목록 — 청문회 날짜, 대상자/의안, 위원회 등
+        hearings: 청문회 회의 목록
+        nominations: 인사청문 요청안 목록 (nominee_name을 준 경우에만)
         endpoint_used: 실제 호출된 엔드포인트 코드
         hearing_type: 요청한 청문회 유형
         count: 이번 페이지 반환 건수
-        total_count: 전체 건수
+        total_count: 조건에 맞는 전체 건수
         has_more: True이면 page+1로 재호출
         raw_response: 비표준 응답 형식일 때 전체 JSON
     """
     hearing_type = hearing_type.lower()
     endpoint = EP_HEARING_CONFIRM if hearing_type == "confirmation" else EP_HEARING_PUBLIC
-
-    params: dict[str, Any] = {"AGE": assembly, "pIndex": page, "pSize": page_size}
-    if nominee_name:
-        params["NAAS_NM"] = nominee_name
-    if committee:
-        params["CMIT_NM"] = committee
+    # ERACO (e.g. "제22대") is the required parameter of both endpoints
+    params: dict[str, Any] = {"ERACO": f"제{str(assembly).strip()}대", "pIndex": 1, "pSize": 1000}
 
     async with AssemblyAPIClient() as client:
         try:
@@ -1459,22 +1487,40 @@ async def search_hearings(
                     ),
                 }
 
+            # The endpoints filter by committee code only, so names are matched here
+            if committee:
+                rows = [r for r in rows if committee in str(r.get("CMIT_NM") or "")]
+            nominations = None
+            if nominee_name and hearing_type == "confirmation":
+                rows = [r for r in rows if nominee_name in str(r.get("CMIT_NM") or "")]
+                noms, _, noms_raw = await client.query_endpoint(
+                    EP_HEARING_REQUESTS,
+                    {"AGE": assembly, "APPOINT_NAME": nominee_name, "pIndex": 1, "pSize": 100},
+                )
+                nominations = noms if noms_raw is None else []
+
+            total = len(rows)
+            page_rows = rows[(page - 1) * page_size: page * page_size]
             has_more = total > page * page_size
             type_label = "인사청문회" if hearing_type == "confirmation" else "공청회"
-            return {
-                "hearings": rows,
+            result = {
+                "hearings": page_rows,
                 "endpoint_used": endpoint,
                 "hearing_type": hearing_type,
-                "count": len(rows),
+                "count": len(page_rows),
                 "total_count": total,
                 "has_more": has_more,
                 "raw_response": None,
                 "message": (
-                    f"{assembly}대 {type_label}: 전체 {total}건 중 {len(rows)}건 반환."
-                    if rows
+                    f"{assembly}대 {type_label}: 전체 {total}건 중 {len(page_rows)}건 반환."
+                    if page_rows
                     else f"{assembly}대 {type_label}: 결과가 없습니다."
                 ),
             }
+            if nominations is not None:
+                result["nominations"] = nominations
+                result["message"] += f" 인사청문 요청안 {len(nominations)}건."
+            return result
         except Exception as e:
             return {
                 "error": str(e),
@@ -1649,6 +1695,9 @@ def main() -> None:
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
+    # httpx logs every request URL at INFO, and the URL carries the API key
+    for noisy in ("httpx", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
     api_key = os.getenv("ASSEMBLY_API_KEY")
     if not api_key:
         logging.error("ASSEMBLY_API_KEY environment variable is not set.")

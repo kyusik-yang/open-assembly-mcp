@@ -25,14 +25,15 @@ EP_COMMITTEE_REVIEW_MTG = "BILLJUDGECONF"  # 위원회 심사 회의정보 (requ
 
 # Phase 3 endpoint codes (verified via hollobit/assembly-api-mcp source review, 2026-04)
 # Parameter names are best-known from API patterns; use query_endpoint for custom params.
-EP_NARS_REPORTS = "naaborihbkorknasp"          # 국회입법조사처 보고서 (NARS)
+EP_NARS_REPORTS = "ALLNARSPBLM"                # 국회입법조사처 제공 자료 통합 API (MTR_TTL, MTR_DIV)
 EP_PETITION_PENDING = "nvqbafvaajdiqhehi"       # 계류 청원
 EP_PETITION_LIST = "PTTRCP"                     # 청원 접수 목록
 EP_SCHEDULE_ALL = "ALLSCHEDULE"                 # 국회 통합 일정
 EP_SCHEDULE_PLENARY = "nekcaiymatialqlxr"       # 본회의 일정
 EP_SCHEDULE_COMMITTEE = "nrsldhjpaemrmolla"     # 위원회 일정
-EP_HEARING_CONFIRM = "VCONFCFRMCONFLIST"        # 인사청문회 목록
-EP_HEARING_PUBLIC = "VCONFPHCONFLIST"           # 공청회 목록
+EP_HEARING_CONFIRM = "VCONFCFRMCONFLIST"        # 인사청문회 회의록 목록 (ERACO 필수, 예: 제22대)
+EP_HEARING_PUBLIC = "VCONFPHCONFLIST"           # 공청회 회의록 목록 (ERACO 필수, 예: 제22대)
+EP_HEARING_REQUESTS = "nrvsawtaauyihadij"      # 인사청문 요청안 (AGE, APPOINT_NAME = 후보자명)
 
 # Not available as Open API (full documents only): 회의록 전문, 법률안 제안이유
 # Some petition metadata IS available via EP_PETITION_* above (statistics and status).
@@ -61,6 +62,10 @@ class AssemblyAPIClient:
 
     def _base_params(self) -> dict[str, Any]:
         return {"KEY": self.api_key, "Type": "json"}
+
+    def _scrub(self, text: str) -> str:
+        """Remove the API key from text that may reach logs or tool results."""
+        return text.replace(self.api_key, "***") if self.api_key else text
 
     def _parse_response(self, data: dict, endpoint: str) -> tuple[list[dict], int]:
         """열린국회 API 응답 파싱. INFO-200 = 빈 결과, INFO-000 = 정상.
@@ -106,13 +111,13 @@ class AssemblyAPIClient:
             resp.raise_for_status()
             return self._parse_response(resp.json(), endpoint)
         except httpx.TimeoutException as e:
-            raise ValueError(f"Request timed out after 30s — API may be slow, try again: {e}") from e
+            raise ValueError(self._scrub(f"Request timed out after 30s — API may be slow, try again: {e}")) from e
         except httpx.HTTPStatusError as e:
-            raise ValueError(f"HTTP {e.response.status_code}: {e.response.text}") from e
+            raise ValueError(self._scrub(f"HTTP {e.response.status_code}: {e.response.text}")) from e
         except ValueError:
             raise
         except Exception as e:
-            raise ValueError(f"Request failed: {e}") from e
+            raise ValueError(self._scrub(f"Request failed: {e}")) from e
 
     # ------------------------------------------------------------------
     # P1: 핵심 Tool 메서드
@@ -450,14 +455,14 @@ class AssemblyAPIClient:
                 # Endpoint uses a non-standard response structure — return raw JSON
                 return [], 0, data
         except httpx.TimeoutException as e:
-            raise ValueError(
+            raise ValueError(self._scrub(
                 f"Request timed out after 30s — API may be slow, try again: {e}"
-            ) from e
+            )) from e
         except httpx.HTTPStatusError as e:
-            raise ValueError(
+            raise ValueError(self._scrub(
                 f"HTTP {e.response.status_code}: {e.response.text}"
-            ) from e
+            )) from e
         except ValueError:
             raise
         except Exception as e:
-            raise ValueError(f"Request failed: {e}") from e
+            raise ValueError(self._scrub(f"Request failed: {e}")) from e
