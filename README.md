@@ -418,7 +418,7 @@ This MCP server queries the [열린국회정보 API](https://open.assembly.go.kr
 
 | Package | Data | Scale | Install |
 |---------|------|-------|---------|
-| [**kna**](https://github.com/kyusik-yang/kna) | Master bill database, roll call votes, DW-NOMINATE ideal points, bill texts | 110K bills, 2.4M votes (17th-22nd) | `pip install kna` |
+| [**kna**](https://github.com/kyusik-yang/kna) | Master bill database, roll call votes, ideal points (bridged default, per-assembly W-NOMINATE, pooled DW-NOMINATE), bill texts | 115K bills and 4.1M roll-call votes (17th-22nd), 955 ideal points (20th-22nd) | `pip install kna` |
 | [**korean-assembly-bills**](https://github.com/kyusik-yang/korean-assembly-bills) | Bill propose-reason texts (제안이유), co-sponsor records, MP metadata | 60,925 bills (20th-22nd) | `pip install korean-assembly-bills` |
 | [**kr-hearings-data**](https://github.com/kyusik-yang/kr-hearings-data) | Committee proceeding speeches, legislator-witness Q&A dyads | 15.1M speaker turns, 11.3M dyads (16th-22nd) | `pip install kr-hearings-data` |
 | [**minister-data**](https://github.com/kyusik-yang/minister-data) | Cabinet minister panel with dual-office (겸직) coding | 687 spells, 686 nominations (1988-2026) | [CSV on GitHub](https://github.com/kyusik-yang/minister-data) |
@@ -430,7 +430,7 @@ This MCP server queries the [열린국회정보 API](https://open.assembly.go.kr
 |-------------|-----|
 | Real-time bill metadata, vote tallies, member roster | **This MCP** (live API) |
 | Pending bills, plenary agenda (time-sensitive) | **This MCP** (live API) |
-| Offline master database, roll calls, DW-NOMINATE ideal points | [kna](https://github.com/kyusik-yang/kna) |
+| Offline master database, roll calls, ideal points | [kna](https://github.com/kyusik-yang/kna) |
 | Bill propose-reason text (제안이유) | [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) |
 | Committee hearing transcripts, speech-level data | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) |
 | Legislator-witness Q&A pairs for oversight research | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) dyads |

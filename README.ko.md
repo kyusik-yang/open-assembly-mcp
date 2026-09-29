@@ -340,7 +340,7 @@ Claude 호출:
 
 | 패키지 | 데이터 | 규모 | 설치 |
 |--------|--------|------|------|
-| [**kna**](https://github.com/kyusik-yang/kna) | 법안 마스터 DB, 기명투표, DW-NOMINATE 이념점수, 법안 텍스트 | 110K 법안, 2.4M 표결 (17~22대) | `pip install kna` |
+| [**kna**](https://github.com/kyusik-yang/kna) | 법안 마스터 DB, 기명투표, 이념점수 (bridged 기본, 대수별 W-NOMINATE, pooled DW-NOMINATE), 법안 텍스트 | 115K 법안·4.1M 표결 (17~22대), 955 이념점수 (20~22대) | `pip install kna` |
 | [**korean-assembly-bills**](https://github.com/kyusik-yang/korean-assembly-bills) | 법안 제안이유 텍스트, 공동발의자 기록, 의원 메타데이터 | 60,925건 (20~22대) | `pip install korean-assembly-bills` |
 | [**kr-hearings-data**](https://github.com/kyusik-yang/kr-hearings-data) | 위원회 회의 발언록, 의원-증인 Q&A dyad | 15.1M 발언 턴, 11.3M dyad (16~22대) | `pip install kr-hearings-data` |
 | [**minister-data**](https://github.com/kyusik-yang/minister-data) | 국무위원 패널 데이터 + 겸직 코딩 | 687 재임 구간, 686 지명 (1988~2026) | [GitHub CSV](https://github.com/kyusik-yang/minister-data) |
@@ -352,7 +352,7 @@ Claude 호출:
 |---------------|-----------|
 | 실시간 법안 메타데이터, 표결 집계, 의원 명단 | **이 MCP** (live API) |
 | 계류의안, 본회의 부의안건 (시점 민감) | **이 MCP** (live API) |
-| 오프라인 마스터 DB, 기명투표, DW-NOMINATE 이념점수 | [kna](https://github.com/kyusik-yang/kna) |
+| 오프라인 마스터 DB, 기명투표, 이념점수 | [kna](https://github.com/kyusik-yang/kna) |
 | 법안 제안이유 텍스트 | [korean-assembly-bills](https://github.com/kyusik-yang/korean-assembly-bills) |
 | 위원회 회의록, 발언 단위 데이터 | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) |
 | 의원-증인 Q&A 쌍 (감시 연구) | [kr-hearings-data](https://github.com/kyusik-yang/kr-hearings-data) dyads |
