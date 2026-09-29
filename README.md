@@ -572,6 +572,10 @@ The server architecture and packaging conventions follow
 
 ## Changelog
 
+### v0.7.0 (2026-09)
+- Moves to the MCP Python SDK 2.x (`mcp>=2.2,<3`). The server is built on `MCPServer`, the renamed `FastMCP`. The tools, their parameters and their output are unchanged.
+- The server reports its own package version to clients. Under SDK 2.x an unversioned server reports an empty version.
+
 ### v0.6.1 (2026-09)
 - Pins `mcp` below 2.0. The MCP Python SDK 2.0 (July 2026) removed `mcp.server.fastmcp`, so a fresh install of 0.6.0 pulled `mcp` 2.x and the server failed to start.
 - Internal parameter names use `assembly` instead of `age` throughout the client and server. The tool parameters are unchanged, and the tool descriptions now match them.
