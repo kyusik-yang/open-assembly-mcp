@@ -335,10 +335,10 @@ All tools return `total_count` and `has_more` for transparent pagination.
 
 | Tool | Key parameters | Returns |
 |---|---|---|
-| `search_nars_reports` | `keyword`, `date_from`, `date_to`, `page`, `page_size` | `reports[]`, `total_count`, `has_more` |
+| `search_nars_reports` | `keyword`, `date_from`, `date_to`, `report_type`, `page`, `page_size` | `reports[]`, `total_count`, `has_more` |
 | `search_petitions` | `assembly`, `keyword`, `include_closed`, `page`, `page_size` | `petitions[]`, `total_count`, `has_more` |
 | `get_schedule` | `assembly`, `schedule_type` (all/plenary/committee), `committee`, `page`, `page_size` | `schedule[]`, `total_count`, `has_more` |
-| `search_hearings` | `assembly`, `hearing_type` (confirmation/public), `nominee_name`, `committee` | `hearings[]`, `total_count`, `has_more` |
+| `search_hearings` | `assembly`, `hearing_type` (confirmation/public), `nominee_name`, `committee` | `hearings[]`, `nominations[]` (with `nominee_name`), `total_count`, `has_more` |
 
 **Universal access tools** (reach any of the 276+ endpoints not yet covered above):
 
@@ -571,6 +571,12 @@ The server architecture and packaging conventions follow
 ---
 
 ## Changelog
+
+### v0.7.1 (2026-09)
+- The API key no longer reaches logs or tool results. httpx logged every request URL, key included, at INFO level to the server log that MCP hosts keep, and error messages are now scrubbed of the key.
+- `search_nars_reports` uses the integrated NARS endpoint `ALLNARSPBLM`. The earlier endpoint no longer exists, and every call returned an empty result. `keyword` searches titles, `date_from` and `date_to` filter on the writing date, and the new `report_type` selects a series such as "이슈와 논점".
+- `search_hearings` sends the required `ERACO` parameter (e.g. 제22대). Every call used to fail with ERROR-300 and return nothing. `committee` now matches committee names. `nominee_name` finds special hearing committees named after the nominee and returns the 인사청문 요청안 rows in `nominations`.
+- The endpoint registry marks these endpoints as checked against the Open API specification and adds `nrvsawtaauyihadij` (29 entries).
 
 ### v0.7.0 (2026-09)
 - Moves to the MCP Python SDK 2.x (`mcp>=2.2,<3`). The server is built on `MCPServer`, the renamed `FastMCP`. The tools, their parameters and their output are unchanged.

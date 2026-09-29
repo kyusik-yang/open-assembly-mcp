@@ -1,5 +1,8 @@
 """Integration-style tests for MCP server tools."""
 
+import os
+import sys
+
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
@@ -506,21 +509,41 @@ class TestSearchNarsReportsTool:
         assert "error" not in result
 
     @pytest.mark.asyncio
-    async def test_passes_keyword_as_titl_nm(self):
+    async def test_passes_keyword_as_mtr_ttl(self):
         from data_go_mcp.open_assembly.server import search_nars_reports
 
         mock_client = _make_phase3_mock([], 0)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            await search_nars_reports(keyword="복지", date_from="20240101", date_to="20241231")
+            await search_nars_reports(keyword="복지", report_type="NARS 현안분석")
 
         call_params = mock_client.query_endpoint.call_args[0][1]
-        assert call_params["TITL_NM"] == "복지"
-        assert call_params["PUBLG_STRT_DT"] == "20240101"
-        assert call_params["PUBLG_END_DT"] == "20241231"
+        assert call_params["MTR_TTL"] == "복지"
+        assert call_params["MTR_DIV"] == "NARS 현안분석"
 
     @pytest.mark.asyncio
-    async def test_no_keyword_omits_titl_nm(self):
+    async def test_date_range_filters_on_wrt_dt(self):
+        from data_go_mcp.open_assembly.server import search_nars_reports
+
+        rows = [
+            {"MTR_TTL": "a", "WRT_DT": "2023-12-31"},
+            {"MTR_TTL": "b", "WRT_DT": "2024-03-01"},
+            {"MTR_TTL": "c", "WRT_DT": "2024-12-31"},
+            {"MTR_TTL": "d", "WRT_DT": "2025-01-02"},
+        ]
+        mock_client = _make_phase3_mock(rows, len(rows))
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            result = await search_nars_reports(keyword="복지", date_from="20240101", date_to="2024-12-31")
+
+        call_params = mock_client.query_endpoint.call_args[0][1]
+        assert call_params["MTR_TTL"] == "복지"
+        assert not any(k.startswith("PUBLG") for k in call_params)
+        assert [r["MTR_TTL"] for r in result["reports"]] == ["b", "c"]
+        assert result["total_count"] == 2
+
+    @pytest.mark.asyncio
+    async def test_no_keyword_omits_mtr_ttl(self):
         from data_go_mcp.open_assembly.server import search_nars_reports
 
         mock_client = _make_phase3_mock([], 0)
@@ -529,7 +552,7 @@ class TestSearchNarsReportsTool:
             await search_nars_reports()
 
         call_params = mock_client.query_endpoint.call_args[0][1]
-        assert "TITL_NM" not in call_params
+        assert "MTR_TTL" not in call_params
 
     @pytest.mark.asyncio
     async def test_uses_correct_endpoint_code(self):
@@ -791,44 +814,70 @@ class TestSearchHearingsTool:
         assert result["hearing_type"] == "public"
 
     @pytest.mark.asyncio
-    async def test_nominee_name_passed_as_naas_nm(self):
+    async def test_assembly_passed_as_eraco(self):
         from data_go_mcp.open_assembly.server import search_hearings
 
         mock_client = _make_phase3_mock([], 0)
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            await search_hearings(assembly="22", nominee_name="홍길동")
+            await search_hearings(assembly="22", hearing_type="public")
 
         call_params = mock_client.query_endpoint.call_args[0][1]
-        assert call_params["NAAS_NM"] == "홍길동"
+        assert call_params["ERACO"] == "제22대"
+        assert "AGE" not in call_params
 
     @pytest.mark.asyncio
-    async def test_committee_filter_passed(self):
+    async def test_nominee_name_searches_committee_names_and_requests(self):
         from data_go_mcp.open_assembly.server import search_hearings
+        from data_go_mcp.open_assembly.client import EP_HEARING_REQUESTS
 
-        mock_client = _make_phase3_mock([], 0)
+        rows = [
+            {"CONF_DT": "2025-06-24", "CMIT_NM": "국무총리(김민석)임명동의에관한인사청문특별위원회"},
+            {"CONF_DT": "2025-07-15", "CMIT_NM": "법제사법위원회"},
+        ]
+        mock_client = _make_phase3_mock(rows, len(rows))
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            await search_hearings(assembly="22", committee="법제사법위원회")
+            result = await search_hearings(assembly="22", nominee_name="김민석")
 
-        call_params = mock_client.query_endpoint.call_args[0][1]
-        assert call_params["CMIT_NM"] == "법제사법위원회"
+        assert [r["CMIT_NM"] for r in result["hearings"]] == [rows[0]["CMIT_NM"]]
+        endpoint, params = mock_client.query_endpoint.call_args[0]
+        assert endpoint == EP_HEARING_REQUESTS
+        assert params["APPOINT_NAME"] == "김민석"
+        assert "nominations" in result
+
+    @pytest.mark.asyncio
+    async def test_committee_filter_matches_committee_names(self):
+        from data_go_mcp.open_assembly.server import search_hearings
+
+        rows = [
+            {"CONF_DT": "2025-07-15", "CMIT_NM": "법제사법위원회"},
+            {"CONF_DT": "2025-07-16", "CMIT_NM": "국방위원회"},
+        ]
+        mock_client = _make_phase3_mock(rows, len(rows))
+
+        with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
+            result = await search_hearings(assembly="22", committee="법제사법")
+
+        assert result["total_count"] == 1
+        assert result["hearings"][0]["CMIT_NM"] == "법제사법위원회"
 
     @pytest.mark.asyncio
     async def test_returns_hearings_on_success(self):
         from data_go_mcp.open_assembly.server import search_hearings
 
         sample_rows = [
-            {"CONF_DT": "20240901", "NAAS_NM": "홍길동", "CMIT_NM": "인사청문위원회"},
+            {"CONF_DT": f"2024-09-{d:02d}", "CMIT_NM": "법제사법위원회"} for d in range(1, 13)
         ]
-        mock_client = _make_phase3_mock(sample_rows, 50)
+        mock_client = _make_phase3_mock(sample_rows, len(sample_rows))
 
         with patch("data_go_mcp.open_assembly.server.AssemblyAPIClient", return_value=mock_client):
-            result = await search_hearings(assembly="22")
+            result = await search_hearings(assembly="22", page_size=10)
 
-        assert result["count"] == 1
-        assert result["total_count"] == 50
+        assert result["count"] == 10
+        assert result["total_count"] == 12
         assert result["has_more"] is True
+        assert "nominations" not in result
         assert "error" not in result
 
     @pytest.mark.asyncio
@@ -1415,3 +1464,24 @@ class TestQueryAssemblyTool:
         assert result["count"] == 0
         assert result["has_more"] is False
         assert "파라미터" in result["message"]
+
+
+class TestApiKeyNotExposed:
+    def test_scrub_removes_key(self):
+        from data_go_mcp.open_assembly.client import AssemblyAPIClient
+
+        with patch.dict(os.environ, {"ASSEMBLY_API_KEY": "SECRETKEY123"}):
+            client = AssemblyAPIClient()
+        msg = client._scrub("Request failed: https://example/api?KEY=SECRETKEY123&Type=json")
+        assert "SECRETKEY123" not in msg
+        assert "KEY=***" in msg
+
+    def test_main_silences_request_url_logging(self):
+        import logging
+        from data_go_mcp.open_assembly import server
+
+        with patch.dict(os.environ, {"ASSEMBLY_API_KEY": "SECRETKEY123"}), \
+                patch.object(server.mcp, "run"), patch.object(sys, "argv", ["open-assembly-mcp"]):
+            server.main()
+        assert logging.getLogger("httpx").level >= logging.WARNING
+        assert logging.getLogger("httpcore").level >= logging.WARNING
